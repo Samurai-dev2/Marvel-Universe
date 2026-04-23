@@ -496,7 +496,29 @@
 
         /* RESPONSIVE */
         @media (max-width: 900px) {
-            .modal-body { grid-template-columns: 1fr; }
+            .modal-body {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    max-height: 85vh;           /* prevent full screen takeover */
+}
+
+.modal-player {
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;              /* add spacing */
+}
+
+.modal-player iframe {
+    width: 90%;                 /* smaller width */
+    max-width: 900px;
+    height: 450px;              /* fixed smaller height */
+    border-radius: 12px;
+}
+            .modal-player iframe {
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+}
             .modal-sidebar { max-height: 300px; }
             .hero-content { padding: 0 30px; }
             .hero-stats { right: 30px; bottom: 30px; }
