@@ -410,7 +410,7 @@
 }
 .modal-close:hover { background: var(--marvel-red); border-color: var(--marvel-red); transform: rotate(90deg); }
 
-/* ─── MAIN FIX: Smaller & Better Video Player ─── */
+
 .modal-body {
     display: grid;
     grid-template-columns: 1fr 320px;
@@ -422,21 +422,25 @@
     background: #000;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    padding: 25px 20px 15px;
-    position: relative;
+    padding: 20px 20px 0;
+    overflow: hidden; /* remove this */
 }
 
+.modal-body {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    max-height: 85vh;
+    overflow: visible; /* ← was 'hidden', clipping tracker */
+}
 .modal-player iframe {
     width: 92%;
     max-width: 820px;
-    height: 460px;           /* ← This is the main control */
+    height: 420px; /* slightly reduced to make room */
     border-radius: 12px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.7);
     flex-shrink: 0;
 }
-
 /* Sidebar */
 .modal-sidebar {
     padding: 25px;
@@ -457,14 +461,17 @@
 
 /* PROGRESS TRACKER */
 .progress-tracker {
-    margin-top: 15px;
-    padding: 12px 20px;
-    border-top: 1px solid rgba(255,255,255,0.08);
+    width: 92%;           /* match iframe width */
+    max-width: 820px;     /* match iframe max-width */
+    margin-top: 12px;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     gap: 12px;
-    background: rgba(0,0,0,0.4);
-    border-radius: 0 0 12px 12px;
+    flex-shrink: 0;       /* ← prevents it from being squished */
 }
         .sidebar-poster { width: 100%; border-radius: 10px; margin-bottom: 18px; border: 1px solid rgba(255,255,255,0.1); }
 .sidebar-rating { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
@@ -737,7 +744,14 @@
         </div>
         <div class="modal-body">
             <div class="modal-player">
-                <iframe id="movieFrame" src="" referrerpolicy="origin" allowfullscreen></iframe>
+     <iframe 
+    id="movieFrame" 
+    src="" 
+    allowfullscreen
+    allow="autoplay; fullscreen; picture-in-picture"
+    referrerpolicy="no-referrer-when-downgrade"
+    sandbox="allow-scripts allow-same-origin allow-forms allow-popups">
+</iframe>
                 <div class="progress-tracker">
                     <span class="progress-label">Progress:</span>
                     <input type="range" class="progress-slider" id="progressSlider" min="0" max="100" value="0" oninput="updateProgress(this.value)">
