@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marvel Universe - Watch Movies</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --marvel-red: #e23636;
+            --dark-bg: #0a0a0a;
+            --card-bg: #141414;
+            --card-hover: #1f1f1f;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --gold: #f5c518;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            font-family: 'Roboto', sans-serif;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--dark-bg); }
+        ::-webkit-scrollbar-thumb { background: var(--marvel-red); border-radius: 3px; }
+
+        /* AUTH */
+        .auth-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 99999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(12px);
+            animation: fadeIn 0.3s ease;
+        }
+        .auth-overlay.active { display: flex; }
+
+        .auth-box {
+            background: #141414;
+            border: 1px solid rgba(226,54,54,0.3);
+            border-radius: 16px;
+            width: 95%;
+            max-width: 420px;
+            padding: 30px;
+            box-shadow: 0 0 60px rgba(226,54,54,0.2);
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .auth-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 25px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+        .auth-tab.active {
+            background: var(--marvel-red);
+            color: white;
+            box-shadow: 0 0 15px rgba(226,54,54,0.4);
+        }
+
+        .auth-title {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 28px;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .auth-sub {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-bottom: 22px;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 14px;
+            transition: all 0.3s;
+            gap: 10px;
+        }
+        .input-group:focus-within {
+            border-color: var(--marvel-red);
+            background: rgba(226,54,54,0.06);
+            box-shadow: 0 0 12px rgba(226,54,54,0.15);
+        }
+        .input-group input {
+            flex: 1;
+            background: none;
+            border: none;
+            outline: none;
+            color: white;
+            font-size: 14px;
+        }
+        .input-group input::placeholder { color: var(--text-secondary); }
+        .input-icon { font-size: 16px; }
+        .input-toggle {
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            font-size: 16px;
+        }
+        .input-toggle:hover { opacity: 1; }
+
+        .auth-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            font-size: 12px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .remember-me input { accent-color: var(--marvel-red); }
+
+        .forgot-pass {
+            color: var(--marvel-red);
+            text-decoration: none;
+            font-size: 12px;
+            transition: opacity 0.2s;
+            cursor: pointer;
+        }
+        .forgot-pass:hover { opacity: 0.8; }
+
+        .auth-error {
+            color: #ff6b6b;
+            font-size: 12px;
+            margin-bottom: 10px;
+            min-height: 18px;
+            text-align: center;
+        }
+
+        .auth-success {
+            color: #44ff88;
+            font-size: 12px;
+            margin-bottom: 10px;
+            min-height: 18px;
+            text-align: center;
+        }
+
+        .auth-submit {
+            width: 100%;
+            padding: 14px;
+            background: var(--marvel-red);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(226,54,54,0.3);
+            margin-bottom: 18px;
+        }
+        .auth-submit:hover {
+            background: #ff4444;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(226,54,54,0.5);
+        }
+        .auth-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-switch {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        .auth-switch span {
+            color: var(--marvel-red);
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .auth-switch span:hover { text-decoration: underline; }
+
+        .password-strength {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-bottom: 6px;
+            overflow: hidden;
+        }
+        .strength-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+        .strength-text {
+            font-size: 11px;
+            margin-bottom: 14px;
+            letter-spacing: 1px;
+        }
+
+        /* NAV USER */
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            position: relative;
+        }
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--marvel-red);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            border: 2px solid rgba(226,54,54,0.5);
+        }
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+        }
+        .user-dropdown {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background: #1a1a1a;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 8px;
+            min-width: 160px;
+            display: none;
+            z-index: 9999;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .nav-user:hover .user-dropdown { display: block; }
+        .dropdown-item {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dropdown-item:hover {
+            background: rgba(255,255,255,0.06);
+            color: white;
+        }
+        .dropdown-item.logout { color: var(--marvel-red); }
+        .dropdown-item.logout:hover { background: rgba(226,54,54,0.1); }
+
+        /* WATCHLIST BUTTON */
+        .btn-watchlist {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+        .btn-watchlist:hover {
+            background: var(--marvel-red);
+            border-color: var(--marvel-red);
+        }
+        .btn-watchlist.saved {
+            background: var(--marvel-red);
+            border-color: var(--marvel-red);
+        }
+
+        /* SHAKE */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+        }
+
+        /* NAV */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 0 40px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(226, 54, 54, 0.2);
+        }
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+        .logo-box {
+            background: var(--marvel-red);
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-family: 'Bebas Neue', cursive;
+            font-size: 28px;
+            letter-spacing: 2px;
+            color: white;
+            box-shadow: 0 0 20px rgba(226, 54, 54, 0.5);
+        }
+        .logo-text {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 20px;
+            letter-spacing: 3px;
+            color: var(--text-secondary);
+        }
+        .nav-search {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 25px;
+            padding: 8px 18px;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        .nav-search:focus-within {
+            background: rgba(255,255,255,0.12);
+            border-color: var(--marvel-red);
+            box-shadow: 0 0 15px rgba(226, 54, 54, 0.2);
+        }
+        .nav-search input {
+            background: none;
+            border: none;
+            outline: none;
+            color: white;
+            font-size: 14px;
+            width: 220px;
+        }
+        .nav-search input::placeholder { color: var(--text-secondary); }
+        .search-icon { color: var(--text-secondary); font-size: 16px; }
+        .nav-links {
+            display: flex;
+            gap: 25px;
+            list-style: none;
+            align-items: center;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+            text-transform: uppercase;
+        }
+        .nav-links a:hover { color: var(--marvel-red); }
+
+        .btn-login {
+            background: transparent;
+            border: 1px solid var(--marvel-red);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+        .btn-login:hover {
+            background: var(--marvel-red);
+            box-shadow: 0 0 15px rgba(226,54,54,0.4);
+        }
+
+        /* HERO */
+        .hero {
+            position: relative;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(to right, rgba(0,0,0,0.95) 40%, transparent),
+                linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%),
+                url('https://wallpapercave.com/wp/wp2777802.jpg') center/cover no-repeat;
+            filter: brightness(0.7);
+        }
+        .hero-particles { position: absolute; inset: 0; overflow: hidden; }
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--marvel-red);
+            border-radius: 50%;
+            animation: float-particle linear infinite;
+            opacity: 0;
+        }
+        @keyframes float-particle {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) scale(1); opacity: 0; }
+        }
+        .hero-content {
+            position: relative;
+            padding: 0 80px;
+            max-width: 700px;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(226, 54, 54, 0.15);
+            border: 1px solid rgba(226, 54, 54, 0.4);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--marvel-red);
+            margin-bottom: 20px;
+        }
+        .hero-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--marvel-red);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+        .hero-title {
+            font-family: 'Bebas Neue', cursive;
+            font-size: clamp(50px, 8vw, 100px);
+            line-height: 0.9;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+        }
+        .hero-title span {
+            color: var(--marvel-red);
+            text-shadow: 0 0 30px rgba(226, 54, 54, 0.5);
+        }
+        .hero-desc {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 35px;
+            max-width: 500px;
+        }
+        .hero-buttons { display: flex; gap: 15px; flex-wrap: wrap; }
+        .btn-primary {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--marvel-red);
+            color: white;
+            padding: 14px 30px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            box-shadow: 0 5px 25px rgba(226, 54, 54, 0.4);
+        }
+        .btn-primary:hover {
+            background: #ff4444;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 35px rgba(226, 54, 54, 0.6);
+        }
+        .btn-secondary {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.08);
+            color: white;
+            padding: 14px 30px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.15);
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        .hero-stats {
+            position: absolute;
+            bottom: 60px;
+            right: 80px;
+            display: flex;
+            gap: 40px;
+        }
+        .stat-item { text-align: center; }
+        .stat-number {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 42px;
+            color: var(--marvel-red);
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        /* PHASE TABS */
+        .phase-tabs {
+            display: flex;
+            gap: 0;
+            padding: 0 60px;
+            margin-top: 80px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            overflow-x: auto;
+        }
+        .phase-tabs::-webkit-scrollbar { height: 0; }
+        .phase-tab {
+            padding: 14px 28px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            position: relative;
+        }
+        .phase-tab:hover { color: white; }
+        .phase-tab.active {
+            color: white;
+            border-bottom-color: var(--marvel-red);
+        }
+        .phase-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--marvel-red);
+            box-shadow: 0 0 10px var(--marvel-red);
+        }
+
+        /* SECTION */
+        .section { padding: 20px 60px 60px; }
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+        .section-title {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 32px;
+            letter-spacing: 3px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title::before {
+            content: '';
+            display: block;
+            width: 5px;
+            height: 32px;
+            background: var(--marvel-red);
+            border-radius: 3px;
+            box-shadow: 0 0 10px var(--marvel-red);
+        }
+        .see-all {
+            color: var(--marvel-red);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border: 1px solid rgba(226,54,54,0.3);
+            padding: 8px 18px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+        .see-all:hover {
+            background: rgba(226,54,54,0.1);
+            border-color: var(--marvel-red);
+        }
+
+        /* MOVIES GRID */
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .movie-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .movie-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: var(--marvel-red);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(226,54,54,0.3);
+        }
+        .movie-poster {
+            position: relative;
+            aspect-ratio: 2/3;
+            overflow: hidden;
+        }
+        .movie-poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        .movie-card:hover .movie-poster img { transform: scale(1.1); }
+        .movie-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, transparent 60%);
+            display: flex;
+            align-items: flex-end;
+            padding: 15px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .movie-card:hover .movie-overlay { opacity: 1; }
+        .play-btn {
+            width: 50px;
+            height: 50px;
+            background: var(--marvel-red);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(226,54,54,0.7);
+            transition: transform 0.2s;
+        }
+        .play-btn:hover { transform: scale(1.1); }
+        .overlay-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            gap: 12px;
+        }
+        .movie-rating {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            backdrop-filter: blur(5px);
+        }
+        .movie-phase-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: var(--marvel-red);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .movie-info { padding: 14px; }
+        .movie-title {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+        .movie-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .movie-year { color: var(--marvel-red); }
+        .meta-dot { opacity: 0.4; }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-overlay.active { display: flex; }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal {
+            width: 95%;
+            max-width: 1100px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(226,54,54,0.3);
+            box-shadow: 0 0 80px rgba(226,54,54,0.2);
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: linear-gradient(to right, rgba(226,54,54,0.1), transparent);
+        }
+        .modal-header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .modal-phase {
+            background: var(--marvel-red);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .modal-title {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 26px;
+            letter-spacing: 2px;
+        }
+        .modal-close {
+            width: 38px;
+            height: 38px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-size: 18px;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        .modal-close:hover {
+            background: var(--marvel-red);
+            border-color: var(--marvel-red);
+            transform: rotate(90deg);
+        }
+        .modal-body { display: grid; grid-template-columns: 1fr 300px; }
+        .modal-player {
+            position: relative;
+            aspect-ratio: 16/9;
+            background: #000;
+        }
+        .modal-player iframe { width: 100%; height: 100%; border: none; }
+        .modal-sidebar {
+            padding: 25px;
+            border-left: 1px solid rgba(255,255,255,0.08);
+            overflow-y: auto;
+            max-height: 600px;
+        }
+        .modal-sidebar::-webkit-scrollbar { width: 4px; }
+        .modal-sidebar::-webkit-scrollbar-thumb { background: rgba(226,54,54,0.5); }
+        .sidebar-poster {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-rating {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .stars { color: var(--gold); letter-spacing: 2px; }
+        .sidebar-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+        .meta-tag {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+        }
+        .sidebar-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+        .sidebar-title {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 13px;
+            letter-spacing: 3px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+        .featured-strip {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            scrollbar-width: none;
+        }
+        .featured-strip::-webkit-scrollbar { display: none; }
+        .strip-card {
+            flex: 0 0 160px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: all 0.3s;
+        }
+        .strip-card:hover {
+            border-color: rgba(226,54,54,0.5);
+            transform: translateY(-3px);
+        }
+        .strip-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; }
+        .strip-card p {
+            padding: 8px;
+            font-size: 11px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        /* FOOTER */
+        footer {
+            padding: 60px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            margin-top: 60px;
+        }
+        .footer-top {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        .footer-brand .logo-box { font-size: 24px; display: inline-block; margin-bottom: 15px; }
+        .footer-brand p {
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.7;
+            max-width: 250px;
+        }
+        .footer-col h4 {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 16px;
+            letter-spacing: 2px;
+            color: var(--marvel-red);
+            margin-bottom: 15px;
+        }
+        .footer-col ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .footer-col a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.3s;
+        }
+        .footer-col a:hover { color: white; }
+        .footer-bottom {
+            padding-top: 30px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        /* LOADER */
+        .loader {
+            position: fixed;
+            inset: 0;
+            background: var(--dark-bg);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+        .loader.hidden { opacity: 0; visibility: hidden; }
+        .loader-logo {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 60px;
+            background: var(--marvel-red);
+            padding: 10px 20px;
+            border-radius: 8px;
+            animation: logo-pulse 1s ease-in-out infinite;
+        }
+        @keyframes logo-pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(226,54,54,0.5); }
+            50% { box-shadow: 0 0 60px rgba(226,54,54,0.9); }
+        }
+        .loader-bar {
+            width: 200px;
+            height: 3px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .loader-progress {
+            height: 100%;
+            background: var(--marvel-red);
+            border-radius: 2px;
+            animation: load 1.5s ease-in-out forwards;
+        }
+        @keyframes load {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+            .modal-body { grid-template-columns: 1fr; }
+            .modal-sidebar { max-height: 300px; }
+            .hero-content { padding: 0 30px; }
+            .hero-stats { right: 30px; bottom: 30px; }
+            .section { padding: 20px 20px 40px; }
+            .phase-tabs { padding: 0 20px; }
+            .footer-top { grid-template-columns: 1fr 1fr; }
+            nav { padding: 0 20px; }
+            .nav-links { display: none; }
+        }
+        @media (max-width: 600px) {
+            .movies-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .hero-stats { display: none; }
+            .footer-top { grid-template-columns: 1fr; }
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-secondary);
+            display: none;
+            grid-column: 1/-1;
+        }
+        .no-results h3 {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 30px;
+            color: var(--marvel-red);
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div class="loader" id="loader">
+    <div class="loader-logo">MARVEL</div>
+    <div class="loader-bar"><div class="loader-progress"></div></div>
+    <p style="color: var(--text-secondary); font-size: 12px; letter-spacing: 3px;">LOADING UNIVERSE...</p>
+</div>
+
+<!-- NAV -->
+<nav>
+    <a href="#" class="nav-logo">
+        <div class="logo-box">IBRAHIM/DERAR</div>
+        <span class="logo-text">Universe</span>
+    </a>
+    <div class="nav-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search heroes, movies..." id="searchInput" oninput="searchMovies()">
+    </div>
+    <ul class="nav-links">
+        <li><a href="#">Home</a></li>
+        <li><a href="#">Phases</a></li>
+        <li><a href="#">Heroes</a></li>
+        <li><a href="#">About</a></li>
+        <li><button class="btn-login" id="authBtn" onclick="openAuth()">Login</button></li>
+    </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-particles" id="particles"></div>
+    <div class="hero-content">
+        <div class="hero-badge">Now Streaming</div>
+        <h1 class="hero-title">THE <span>MARVEL</span><br>UNIVERSE</h1>
+        <p class="hero-desc">Every hero. Every battle. Every infinity stone. Stream the complete Marvel Cinematic Universe — all phases, all stories, all in one place.</p>
+        <div class="hero-buttons">
+            <button class="btn-primary" onclick="openMovie(movies[0])">▶ Start Watching</button>
+            <button class="btn-secondary" onclick="document.querySelector('.phase-tabs').scrollIntoView({behavior:'smooth'})">📋 Browse All</button>
+        </div>
+    </div>
+    <div class="hero-stats">
+        <div class="stat-item"><div class="stat-number">33</div><div class="stat-label">Movies</div></div>
+        <div class="stat-item"><div class="stat-number">5</div><div class="stat-label">Phases</div></div>
+        <div class="stat-item"><div class="stat-number">1080P</div><div class="stat-label">Quality</div></div>
+    </div>
+</section>
+
+<!-- PHASE TABS -->
+<div class="phase-tabs" id="phaseTabs">
+    <button class="phase-tab active" onclick="filterPhase('all', this)">⚡ All Movies</button>
+    <button class="phase-tab" onclick="filterPhase('1', this)">Phase 1</button>
+    <button class="phase-tab" onclick="filterPhase('2', this)">Phase 2</button>
+    <button class="phase-tab" onclick="filterPhase('3', this)">Phase 3</button>
+    <button class="phase-tab" onclick="filterPhase('4', this)">Phase 4</button>
+    <button class="phase-tab" onclick="filterPhase('5', this)">Phase 5</button>
+</div>
+
+<!-- MOVIES -->
+<section class="section">
+    <div class="section-header">
+        <h2 class="section-title">Marvel Movies</h2>
+        <a href="#" class="see-all">View All →</a>
+    </div>
+    <div class="movies-grid" id="moviesGrid"></div>
+</section>
+
+<!-- AUTH MODAL -->
+<div class="auth-overlay" id="authModal">
+    <div class="auth-box">
+        <div class="auth-header">
+            <div class="logo-box" style="font-size:20px;padding:4px 10px">MARVEL</div>
+            <button class="modal-close" onclick="closeAuth()">✕</button>
+        </div>
+        <div class="auth-tabs">
+            <button class="auth-tab active" id="loginTab" onclick="switchTab('login')">Login</button>
+            <button class="auth-tab" id="signupTab" onclick="switchTab('signup')">Sign Up</button>
+        </div>
+
+        <!-- Login Form -->
+        <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)">
+            <h2 class="auth-title">Welcome Back, Hero</h2>
+            <p class="auth-sub">Login to access the Marvel Universe</p>
+            <div class="input-group">
+                <span class="input-icon">✉️</span>
+                <input type="email" placeholder="Email Address" id="loginEmail" required>
+            </div>
+            <div class="input-group">
+                <span class="input-icon">🔒</span>
+                <input type="password" placeholder="Password" id="loginPassword" required>
+                <span class="input-toggle" onclick="togglePassword('loginPassword')">👁️</span>
+            </div>
+            <div class="auth-options">
+                <label class="remember-me">
+                    <input type="checkbox" id="rememberMe"> Remember Me
+                </label>
+                <span class="forgot-pass" onclick="handleForgotPassword()">Forgot Password?</span>
+            </div>
+            <div class="auth-error" id="loginError"></div>
+            <button type="submit" class="auth-submit" id="loginBtn">Login</button>
+            <p class="auth-switch">Don't have an account? <span onclick="switchTab('signup')">Sign Up</span></p>
+        </form>
+
+        <!-- Signup Form -->
+        <form class="auth-form" id="signupForm" style="display:none" onsubmit="handleSignup(event)">
+            <h2 class="auth-title">Join The Universe</h2>
+            <p class="auth-sub">Create your Marvel account</p>
+            <div class="input-group">
+                <span class="input-icon">🦸</span>
+                <input type="text" placeholder="Your Hero Name" id="signupName" required>
+            </div>
+            <div class="input-group">
+                <span class="input-icon">✉️</span>
+                <input type="email" placeholder="Email Address" id="signupEmail" required>
+            </div>
+            <div class="input-group">
+                <span class="input-icon">🔒</span>
+                <input type="password" placeholder="Password (min 8 chars)" id="signupPassword" required>
+                <span class="input-toggle" onclick="togglePassword('signupPassword')">👁️</span>
+            </div>
+            <div class="input-group">
+                <span class="input-icon">🔒</span>
+                <input type="password" placeholder="Confirm Password" id="signupConfirm" required>
+            </div>
+            <div class="password-strength">
+                <div class="strength-bar" id="strengthBar"></div>
+            </div>
+            <p class="strength-text" id="strengthText"></p>
+            <div class="auth-error" id="signupError"></div>
+            <button type="submit" class="auth-submit" id="signupBtn">Create Account</button>
+            <p class="auth-switch">Already have an account? <span onclick="switchTab('login')">Login</span></p>
+        </form>
+    </div>
+</div>
+
+<!-- MOVIE MODAL -->
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-header-left">
+                <span class="modal-phase" id="modalPhase">Phase 1</span>
+                <h2 class="modal-title" id="modalTitle">Movie Title</h2>
+                <button class="btn-watchlist" id="watchlistBtn" onclick="toggleWatchlist()">❤️ Watchlist</button>
+            </div>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-player">
+                <iframe id="movieFrame" src="" referrerpolicy="origin" allowfullscreen></iframe>
+            </div>
+            <div class="modal-sidebar">
+                <img id="sidebarPoster" src="" alt="" class="sidebar-poster">
+                <div class="sidebar-rating">
+                    <span class="stars">★★★★★</span>
+                    <span id="sidebarRating" style="font-weight:700"></span>
+                </div>
+                <div class="sidebar-meta" id="sidebarMeta"></div>
+                <p class="sidebar-desc" id="sidebarDesc"></p>
+                <p class="sidebar-title">MORE MOVIES</p>
+                <div class="featured-strip" id="featuredStrip"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <div class="footer-top">
+        <div class="footer-brand">
+            <div class="logo-box">MARVEL</div>
+            <p>Stream the complete Marvel Cinematic Universe. Every hero, every story, every battle — all in one place.</p>
+        </div>
+        <div class="footer-col">
+            <h4>Phases</h4>
+            <ul>
+                <li><a href="#">Phase 1 — The Beginning</a></li>
+                <li><a href="#">Phase 2 — Expansion</a></li>
+                <li><a href="#">Phase 3 — Infinity War</a></li>
+                <li><a href="#">Phase 4 — Multiverse</a></li>
+                <li><a href="#">Phase 5 — New Avengers</a></li>
+            </ul>
+        </div>
+        <div class="footer-col">
+            <h4>Heroes</h4>
+            <ul>
+                <li><a href="#">Iron Man</a></li>
+                <li><a href="#">Captain America</a></li>
+                <li><a href="#">Thor</a></li>
+                <li><a href="#">Black Panther</a></li>
+                <li><a href="#">Spider-Man</a></li>
+            </ul>
+        </div>
+        <div class="footer-col">
+            <h4>Info</h4>
+            <ul>
+                <li><a href="#">About Us</a></li>
+                <li><a href="#">Contact</a></li>
+                <li><a href="#">Privacy Policy</a></li>
+                <li><a href="#">DMCA</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <span>© 2024 Marvel Universe Streaming. Fan-made site.</span>
+        <span>Made with ❤️ for Marvel fans</span>
+    </div>
+</footer>
+
+<!-- APPWRITE SDK — load first -->
+<script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
+
+<script>
+
+const { Client, Account, Databases, ID } = Appwrite;
+
+const client = new Client()
+    .setEndpoint('https://cloud.appwrite.io/v1')
+    .setProject('69ea6e47000c91eb5278'); // ← REPLACE THIS
+
+const account = new Account(client);
+const databases = new Databases(client);
+
+const DATABASE_ID = 'marvel_db';
+const USERS_COLLECTION = 'users';
+
+// Current movie being viewed
+let currentMovie = null;
+let currentUserWatchlist = [];
+
+// ═══════════════════════════════════════════════════
+//  MOVIES DATA
+// ═══════════════════════════════════════════════════
+const movies = [
+    {
+        title: "Iron Man", year: 2008, phase: "1", imdb: "tt0371746",
+        rating: "7.9", duration: "2h 6m", genre: "Action, Sci-Fi",
+        poster: "https://m.media-amazon.com/images/M/MV5BMTczNTI2ODUwOF5BMl5BanBnXkFtZTcwMTU0NTIzMw@@._V1_SX300.jpg",
+        desc: "After being held captive in an Afghan cave, billionaire engineer Tony Stark creates a unique weaponized suit of armor to fight evil."
+    },
+    {
+        title: "The Incredible Hulk", year: 2008, phase: "1", imdb: "tt0800080",
+        rating: "6.7", duration: "1h 52m", genre: "Action, Sci-Fi",
+        poster: "https://m.media-amazon.com/images/M/MV5BMTUyNzk3MjA1OF5BMl5BanBnXkFtZTcwMzA1Mjc2MQ@@._V1_SX300.jpg",
+        desc: "Bruce Banner, a scientist on the run from the U.S. Government, must find a cure for the monster he turns into whenever he loses his temper."
+    },
+    {
+        title: "Iron Man 2", year: 2010, phase: "1", imdb: "tt1228705",
+        rating: "7.0", duration: "2h 4m", genre: "Action, Sci-Fi",
+        poster: "https://m.media-amazon.com/images/M/MV5BMTM0MDgwNjMyMl5BMl5BanBnXkFtZTcwNTg3NzAzMw@@._V1_SX300.jpg",
+        desc: "With the world now aware of his identity as Iron Man, Tony Stark must contend with both his declining health and a vengeful mad scientist."
+    },
+    {
+        title: "Thor", year: 2011, phase: "1", imdb: "tt0800369",
+        rating: "7.0", duration: "1h 55m", genre: "Action, Fantasy",
+        poster: "https://m.media-amazon.com/images/M/MV5BOGE4NzU1YTAtNzA3Mi00ZTA2LTg2YmYtMDJmMThiMjlkYjg2XkEyXkFqcGdeQXVyNTgzMDMzMTg@._V1_SX300.jpg",
+        desc: "The powerful but arrogant god Thor is cast out of Asgard to live amongst humans in Midgard (Earth)."
+    },
+    {
+        title: "Captain America: The First Avenger", year: 2011, phase: "1", imdb: "tt0458339",
+        rating: "6.9", duration: "2h 4m", genre: "Action, Adventure",
+        poster: "https://m.media-amazon.com/images/M/MV5BNzE2MjkwOTYyNl5BMl5BanBnXkFtZTcwODkzOTc4NA@@._V1_SX300.jpg",
+        desc: "Steve Rogers transforms into Captain America after taking a dose of a 'Super-Soldier Serum'."
+    },
+    {
+        title: "The Avengers", year: 2012, phase: "1", imdb: "tt0848228",
+        rating: "8.0", duration: "2h 23m", genre: "Action, Sci-Fi",
+        poster: "https://m.media-amazon.com/images/M/MV5BNDYxNjQyMjAtNTdiOS00NGYwLWFmNTAtNThmYjU5ZGM2NTFkXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_SX300.jpg",
+        desc: "Earth's mightiest heroes must come together to stop the mischievous Loki and his alien army."
+    },
+    {
+        title: "Iron Man 3", year: 2013, phase: "2", imdb: "tt1300854",
+        rating: "7.1", duration: "2h 10m", genre: "Action, Adventure",
+        poster: "https://m.media-amazon.com/images/M/MV5BMjE5MzcyNjk1M15BMl5BanBnXkFtZTcwMjQ4MjcxOQ@@._V1_SX300.jpg",
+        desc: "When Tony Stark's world is torn apart by a formidable terrorist called the Mandarin, he starts an odyssey of rebuilding and retribution."
+    },
+    {
+        title: "Thor: The Dark World", year: 2013, phase: "2", imdb: "tt1981115",
+        rating: "6.8", duration: "1h 52m", genre: "Action, Fantasy",
+        poster: "https://m.media-amazon.com/images/M/MV5BMTQyNzAwOTUxOF5BMl5BanBnXkFtZTcwMTE0OTc5OQ@@._V1_SX300.jpg",
+        desc: "When Dr. Jane Foster gets cursed with a powerful object, Thor must protect it before an ancient race destroys Earth."
+    },
+    {
+        title: "Captain America: The Winter Soldier", year: 2014, phase: "2", imdb: "tt1843866",
+        rating: "7.7", duration: "2h 16m", genre: "Action, Thriller",
+        poster: "https://m.media-amazon.com/images/M/MV5BMzA2NDkwODAwM15BMl5BanBnXkFtZTgwODk5MTgzMTE@._V1_SX300.jpg",
+        desc: "Steve Rogers teams up with Natasha Romanoff to battle a new threat from his past."
+    },
+    {
+        title: "Guardians of the Galaxy", year: 2014, phase: "2", imdb: "tt2015381",
+        rating: "8.0", duration: "2h 1m", genre: "Action, Comedy",
+        poster: "https://m.media-amazon.com/images/M/MV5BMTAwMjU5OTgxNjZeQTJeQWpwZ15BbWU4MDUxNDYxNTMx._V1_SX300.jpg",
+        desc: "A group of intergalactic criminals must pull together to stop a fanatical warrior with plans to purge the universe."
+    },
+    {
+        title: "Avengers: Age of Ultron", year: 2015, phase: "2", imdb: "tt2395427",
+        rating: "7.3", duration: "2h 21m", genre: "Action, Sci-Fi",
+        poster: "https://m.media-amazon.com/images/M/MV5BMTM4OGJmNWMtOTM4Ni00NTE3LTg3MDItZmQxYjc4N2Y3NjY5XkEyXkFqcGdeQXVyODE5NzE3OTE@._V1_SX300.jpg",
+        desc: "When Tony Stark and Bruce Banner try to jump-start a dormant peacekeeping program called Ultron, things go horribly wrong."
+    },
+    {
+        title: "Ant-Man", year: 2015, phase: "2", imdb: "tt0478970",
+        rating: "7.3", duration: "1h 57m", genre: "Action, Comedy",
+        poster: "https://m.media-amazon.com/images/M/MV5BMjM2NTQ5Mzc2M15BMl5BanBnXkFtZTgwNTcxMDI2NTE@._V1_SX300.jpg",
+        desc: "Cat burglar Scott Lang must embrace his inner hero as the Ant-Man."
+    },
+    {
+        title: "Captain America: Civil War", year: 2016, phase: "3", imdb: "tt3498820",
+        rating: "7.8", duration: "2h 27m", genre: "Action, Sci-Fi",
+        poster: "https://m.media-amazon.com/images/M/MV5BMjQ0MTgyNjAxMV5BMl5BanBnXkFtZTgwNjUzMDkyODE@._V1_SX300.jpg",
+        desc: "Political involvement in the Avengers' affairs causes a rift between Captain America and Iron Man."
+    },
+    {
+        title: "Doctor Strange", year: 2016, phase: "3", imdb: "tt1211837",
+        rating: "7.5", duration: "1h 55m", genre: "Action, Fantasy",
+        poster: "https://m.media-amazon.com/images/M/MV5BNjgwNzAzNjk1Nl5BMl5BanBnXkFtZTgwMzQ2NjI1OTE@._V1_SX300.jpg",
+        desc: "A former neurosurgeon embarks on a journey of healing only to be drawn into the world of the mystic arts."
+    },
+    {
+        title: "Guardians of the Galaxy Vol. 2", year: 2017, phase: "3", imdb: "tt3896198",
+        rating: "7.6", duration: "2h 16m", genre: "Action, Comedy",
+        poster: "https://m.media-amazon.com/images/M/MV5BNjM0NTc0NzItM2FlYS00YzEwLWE0YmUtNTA2ZWIzODc2OTgxXkEyXkFqcGdeQXVyNTgwNzIyNzg@._V1_SX300.jpg",
+        desc: "The Guardians struggle to keep together as a team while dealing with their personal family issues."
+    },
+    {
+        title: "Spider-Man: Homecoming", year: 2017, phase: "3", imdb: "tt2250912",
+        rating: "7.4", duration: "2h 13m", genre: "Action, Adventure",
+        poster: "https://m.media-amazon.com/images/M/MV5BNTk4ODQ1MzgzNl5BMl5BanBnXkFtZTgwMTMyMzM4MTI@._V1_SX300.jpg",
+        desc: "Peter Parker balances his life as an ordinary high school student while secretly saving the world as Spider-Man."
+    },
+    {
+        title: "Thor: Ragnarok", year: 2017, phase: "3", imdb: "tt3501632",
+        rating: "7.9", duration: "2h 10m", genre: "Action, Comedy",
+        poster: "https://m.media-amazon.com/images/M/MV5BMjMyNDkzMzI1OF5BMl5BanBnXkFtZTgwODcxOTg0MjI@._V1_SX300.jpg",
+        desc: "Thor must race against time to return to Asgard to stop Ragnarök, the destruction of his world."
+    },
+    {
+        title: "Black Panther", year: 2018, phase: "3", imdb: "tt1825683",
+        rating: "7.3", duration: "2h 14m", genre: "Action, Adventure",
+        poster: "https://m.media-amazon.com/images/M/MV5BMTg1MTY2MjYzNV5BMl5BanBnXkFtZTgwMTc4NTMwNDI@._V1_SX300.jpg",
+        desc: "T'Challa must step forward to lead his people into a new future."
+    },
+    {
+        title: "Avengers: Infinity War", year: 2018, phase: "3", imdb: "tt4154756",
+        rating: "8.4", duration: "2h 29m", genre: "Action, Sci-Fi",
+        poster: "https://m.media-amazon.com/images/M/MV5BMjMxNjY2MDU1OV5BMl5BanBnXkFtZTgwNjIyMDk2MDE@._V1_SX300.jpg",
+        desc: "The Avengers and their allies must be willing to sacrifice all in an attempt to defeat the powerful Thanos."
+    },
+    {
+        title: "Ant-Man and the Wasp", year: 2018, phase: "3", imdb: "tt5095030",
+        rating: "7.0", duration: "1h 58m", genre: "Action, Comedy",
+        poster: "https://m.media-amazon.com/images/M/MV5BYjk3OGZkNDgtN2MxOS00ZTliLTg5NWEtMTRiOTgzNjM5ZWZlXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg",
+        desc: "As Scott Lang balances being both a superhero and a father, Hope van Dyne and Dr. Hank Pym present an urgent new mission."
+    },
+    {
+        title: "Captain Marvel", year: 2019, phase: "3", imdb: "tt4154664",
+        rating: "6.8", duration: "2h 4m", genre: "Action, Sci-Fi",
+        poster: "https://m.media-amazon.com/images/M/MV5BMTE4NTgyODItZmNjNS00YTkwLTkxOTItMTI4N2RmNjZmMTI4XkEyXkFqcGdeQXVyODM2ODM0NDk@._V1_SX300.jpg",
+        desc: "Carol Danvers becomes one of the universe's most powerful heroes when Earth is caught in the middle of a galactic war."
+    },
+    {
+        title: "Avengers: Endgame", year: 2019, phase: "3", imdb: "tt4154796",
+        rating: "8.4", duration: "3h 2m", genre: "Action, Drama",
+        poster: "https://m.media-amazon.com/images/M/MV5BMTc5MDE2ODcwNV5BMl5BanBnXkFtZTgwMzI2NzQ2NzM@._V1_SX300.jpg",
+        desc: "After the devastating events of Infinity War, the Avengers assemble once more to reverse Thanos' actions."
+    },
+    {
+        title: "Spider-Man: Far From Home", year: 2019, phase: "3", imdb: "tt6320628",
+        rating: "7.4", duration: "2h 9m", genre: "Action, Adventure",
+        poster: "https://m.media-amazon.com/images/M/MV5AAYNGQ1ODNiMDItZGY4Yy00YWZkLWFiM2ItZTliZGEwNGRiMGJjXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg",
+        desc: "Following the events of Avengers: Endgame, Spider-Man must step up to take on new threats."
+    },
+    {
+        title: "Black Widow", year: 2021, phase: "4", imdb: "tt3480822",
+        rating: "6.7", duration: "2h 14m", genre: "Action, Thriller",
+        poster: "https://m.media-amazon.com/images/M/MV5BNjRmNDI5MjMtMmFhZi00YzcwLWI4ZGItMGI2MjI5N2MxNmYyXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg",
+        desc: "Natasha Romanoff confronts the darker parts of her ledger when a dangerous conspiracy arises."
+    },
+    {
+        title: "Shang-Chi and the Legend of the Ten Rings", year: 2021, phase: "4", imdb: "tt9376612",
+        rating: "7.4", duration: "2h 12m", genre: "Action, Fantasy",
+        poster: "https://m.media-amazon.com/images/M/MV5BNTliYjlkNDQtMjFlMS00NjgxLWFmNWMtNmEzMDgwMGE0ZGVlXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg",
+        desc: "Shang-Chi is forced to confront his past after being drawn into the Ten Rings organization."
+    },
+    {
+        title: "Eternals", year: 2021, phase: "4", imdb: "tt9032400",
+        rating: "6.3", duration: "2h 37m", genre: "Action, Sci-Fi",
+        poster: "https://m.media-amazon.com/images/M/MV5BMTExZmVjY2ItYTAzYi00MDdlLWFlOWItNTJhMDRjMzQ5ZGY0XkEyXkFqcGdeQXVyODIyOTEyMzY@._V1_SX300.jpg",
+        desc: "The saga of the Eternals, a race of immortal beings who lived on Earth and shaped its history."
+    },
+    {
+        title: "Spider-Man: No Way Home", year: 2021, phase: "4", imdb: "tt10872600",
+        rating: "8.2", duration: "2h 28m", genre: "Action, Adventure",
+        poster: "https://m.media-amazon.com/images/M/MV5BZWMyYzFjYTYtNTRjYi00OGExLWE2YzgtOGRmYjAxZTU3NzBiXkEyXkFqcGdeQXVyMzQ0MzA0NTM@._V1_SX300.jpg",
+        desc: "Peter asks Doctor Strange for help. When a spell goes wrong, dangerous foes from other worlds start to appear."
+    },
+    {
+        title: "Doctor Strange in the Multiverse of Madness", year: 2022, phase: "4", imdb: "tt9419884",
+        rating: "6.9", duration: "2h 6m", genre: "Action, Horror",
+        poster: "https://m.media-amazon.com/images/M/MV5BNWM0ZGJlMzMtZmYwMi00NzI3LTgzMzMtNjMzNjliNDRmZmFlXkEyXkFqcGdeQXVyMTM1MTE1NDMx._V1_SX300.jpg",
+        desc: "Doctor Strange teams with a mysterious newcomer who traverses the multiverse to face a powerful adversary."
+    },
+    {
+        title: "Thor: Love and Thunder", year: 2022, phase: "4", imdb: "tt10089980",
+        rating: "6.3", duration: "1h 59m", genre: "Action, Comedy",
+        poster: "https://m.media-amazon.com/images/M/MV5BMmMxYTM4ZDktYjI1Zi00ODg1LWI1NWQtMDExZTY3YWNkNDY2XkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg",
+        desc: "Thor enlists help to fight Gorr the God Butcher, who intends to make the gods extinct."
+    },
+    {
+        title: "Black Panther: Wakanda Forever", year: 2022, phase: "4", imdb: "tt9114286",
+        rating: "6.7", duration: "2h 41m", genre: "Action, Drama",
+        poster: "https://m.media-amazon.com/images/M/MV5BNTM4NjIxNmEtYWE5NS00NDczLTkyNWQtYThhNmQyZGQzMjM0XkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_SX300.jpg",
+        desc: "The people of Wakanda fight to protect their home as they mourn the death of King T'Challa."
+    },
+    {
+        title: "Ant-Man and the Wasp: Quantumania", year: 2023, phase: "5", imdb: "tt10954600",
+        rating: "6.0", duration: "2h 4m", genre: "Action, Sci-Fi",
+        poster: "https://m.media-amazon.com/images/M/MV5BODZiNjhjZmQtMmIwYS00YzhiLWI0YjEtMDYyMTYzMzUzNzFlXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg",
+        desc: "Scott Lang and Hope Van Dyne are forced to venture into the Quantum Realm."
+    },
+    {
+        title: "Guardians of the Galaxy Vol. 3", year: 2023, phase: "5", imdb: "tt6791350",
+        rating: "7.9", duration: "2h 30m", genre: "Action, Comedy",
+        poster: "https://m.media-amazon.com/images/M/MV5BMDgxOTdjMzYtZGQxMS00ZTAzLWI4Y2UtMTQzN2VlYjYyZWRiXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg",
+        desc: "Still reeling from the loss of Gamora, Peter Quill rallies his team to defend the universe."
+    },
+    {
+        title: "The Marvels", year: 2023, phase: "5", imdb: "tt10676048",
+        rating: "5.5", duration: "1h 45m", genre: "Action, Sci-Fi",
+        poster: "https://m.media-amazon.com/images/M/MV5BM2U2YWU5NWMtOGI2Ni00OGQ4LWI2MWEtNWYwNTNiMTVkMzVmXkEyXkFqcGdeQXVyMDM2NDM2MQ@@._V1_SX300.jpg",
+        desc: "Carol Danvers, Kamala Khan and Monica Rambeau find themselves exchanging places whenever they use their powers."
+    }
+];
+
+// ═══════════════════════════════════════════════════
+//  AUTH FUNCTIONS
+// ═══════════════════════════════════════════════════
+
+function openAuth() {
+    document.getElementById('authModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAuth() {
+    document.getElementById('authModal').classList.remove('active');
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('signupError').textContent = '';
+    document.body.style.overflow = '';
+}
+
+function switchTab(tab) {
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const loginTab = document.getElementById('loginTab');
+    const signupTab = document.getElementById('signupTab');
+
+    if (tab === 'login') {
+        loginForm.style.display = 'block';
+        signupForm.style.display = 'none';
+        loginTab.classList.add('active');
+        signupTab.classList.remove('active');
+    } else {
+        loginForm.style.display = 'none';
+        signupForm.style.display = 'block';
+        signupTab.classList.add('active');
+        loginTab.classList.remove('active');
+    }
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('signupError').textContent = '';
+}
+
+function togglePassword(id) {
+    const input = document.getElementById(id);
+    input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+function shakeForm(formId) {
+    const form = document.getElementById(formId);
+    form.style.animation = 'none';
+    setTimeout(() => form.style.animation = 'shake 0.4s ease', 10);
+    setTimeout(() => form.style.animation = '', 500);
+}
+
+// Password strength
+document.addEventListener('DOMContentLoaded', () => {
+    const passInput = document.getElementById('signupPassword');
+    if (passInput) passInput.addEventListener('input', checkStrength);
+});
+
+function checkStrength() {
+    const val = document.getElementById('signupPassword').value;
+    const bar = document.getElementById('strengthBar');
+    const text = document.getElementById('strengthText');
+    let strength = 0;
+    if (val.length >= 8) strength++;
+    if (/[A-Z]/.test(val)) strength++;
+    if (/[0-9]/.test(val)) strength++;
+    if (/[^A-Za-z0-9]/.test(val)) strength++;
+    const levels = [
+        { width: '0%', color: 'transparent', label: '' },
+        { width: '25%', color: '#ff4444', label: '⚠️ Weak' },
+        { width: '50%', color: '#ff9944', label: '🔶 Fair' },
+        { width: '75%', color: '#ffdd44', label: '🔷 Good' },
+        { width: '100%', color: '#44ff88', label: '✅ Strong' },
+    ];
+    bar.style.width = levels[strength].width;
+    bar.style.background = levels[strength].color;
+    text.textContent = levels[strength].label;
+    text.style.color = levels[strength].color;
+}
+
+// ─── SIGN UP ──────────────────────────────────────
+async function handleSignup(e) {
+    e.preventDefault();
+    const name = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value;
+    const confirm = document.getElementById('signupConfirm').value;
+    const errorEl = document.getElementById('signupError');
+    const btn = document.getElementById('signupBtn');
+
+    if (name.length < 2) { errorEl.textContent = '❌ Name must be at least 2 characters'; return; }
+    if (password.length < 8) { errorEl.textContent = '❌ Password must be at least 8 characters'; return; }
+    if (password !== confirm) { errorEl.textContent = '❌ Passwords do not match'; shakeForm('signupForm'); return; }
+
+    errorEl.textContent = '⏳ Creating account...';
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+
+    try {
+        // 1. Create Appwrite account
+        const user = await account.create(ID.unique(), email, password, name);
+
+        // 2. Auto login
+        await account.createEmailPasswordSession(email, password);
+
+        // 3. Save to database
+        await databases.createDocument(DATABASE_ID, USERS_COLLECTION, user.$id, {
+            name: name,
+            watchlist: []
+        });
+
+        closeAuth();
+        updateNavForUser({ name, email });
+        showToast(`Welcome to Marvel Universe, ${name}! 🦸`);
+
+    } catch (error) {
+        console.error('Signup error:', error);
+        if (error.code === 409) {
+            errorEl.textContent = '❌ Email already registered';
+        } else if (error.message) {
+            errorEl.textContent = '❌ ' + error.message;
+        } else {
+            errorEl.textContent = '❌ Something went wrong. Try again.';
+        }
+        shakeForm('signupForm');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+    }
+}
+
+// ─── LOGIN ────────────────────────────────────────
+async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorEl = document.getElementById('loginError');
+    const btn = document.getElementById('loginBtn');
+
+    errorEl.textContent = '⏳ Logging in...';
+    btn.disabled = true;
+    btn.textContent = 'Logging in...';
+
+    try {
+        await account.createEmailPasswordSession(email, password);
+        const user = await account.get();
+
+        // Load watchlist
+        await loadUserWatchlist(user.$id);
+
+        closeAuth();
+        updateNavForUser({ name: user.name, email: user.email });
+        showToast(`Welcome back, ${user.name}! 🦸`);
+
+    } catch (error) {
+        console.error('Login error:', error);
+        if (error.code === 401 || error.code === 400) {
+            errorEl.textContent = '❌ Wrong email or password';
+        } else {
+            errorEl.textContent = '❌ ' + (error.message || 'Something went wrong');
+        }
+        shakeForm('loginForm');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Login';
+    }
+}
+
+// ─── LOGOUT ───────────────────────────────────────
+async function logoutUser() {
+    try {
+        await account.deleteSession('current');
+        currentUserWatchlist = [];
+        updateNavForGuest();
+        showToast('Logged out. See you, Hero! 👋');
+    } catch (error) {
+        console.error('Logout error:', error);
+        showToast('❌ Could not log out. Try again.');
+    }
+}
+
+// ─── FORGOT PASSWORD ──────────────────────────────
+async function handleForgotPassword() {
+    const email = document.getElementById('loginEmail').value.trim();
+    if (!email) {
+        document.getElementById('loginError').textContent = '⚠️ Enter your email above first';
+        return;
+    }
+    try {
+        await account.createRecovery(email, window.location.origin);
+        document.getElementById('loginError').style.color = '#44ff88';
+        document.getElementById('loginError').textContent = '✅ Reset email sent! Check your inbox';
+        setTimeout(() => {
+            document.getElementById('loginError').style.color = '';
+            document.getElementById('loginError').textContent = '';
+        }, 4000);
+    } catch (error) {
+        document.getElementById('loginError').textContent = '❌ Email not found';
+    }
+}
+
+// ─── CHECK AUTH ON LOAD ───────────────────────────
+async function checkAuthState() {
+    try {
+        const user = await account.get();
+        await loadUserWatchlist(user.$id);
+        updateNavForUser({ name: user.name, email: user.email });
+    } catch (error) {
+        // Not logged in — that's fine
+        updateNavForGuest();
+    }
+}
+
+// ─── UPDATE NAVBAR ────────────────────────────────
+function updateNavForUser(user) {
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const authBtn = document.getElementById('authBtn');
+    if (authBtn) {
+        authBtn.outerHTML = `
+            <div class="nav-user" id="navUser">
+                <div class="user-avatar">${initials}</div>
+                <span class="user-name">${user.name.split(' ')[0]}</span>
+                <div class="user-dropdown">
+                    <div class="dropdown-item">👤 ${user.name}</div>
+                    <div class="dropdown-item" onclick="showWatchlist()">❤️ My Watchlist</div>
+                    <div class="dropdown-item logout" onclick="logoutUser()">🚪 Logout</div>
+                </div>
+            </div>`;
+    }
+}
+
+function updateNavForGuest() {
+    const navUser = document.getElementById('navUser');
+    if (navUser) {
+        navUser.outerHTML = `<button class="btn-login" id="authBtn" onclick="openAuth()">Login</button>`;
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//  WATCHLIST FUNCTIONS
+// ═══════════════════════════════════════════════════
+
+async function loadUserWatchlist(userId) {
+    try {
+        const doc = await databases.getDocument(DATABASE_ID, USERS_COLLECTION, userId);
+        currentUserWatchlist = doc.watchlist || [];
+    } catch (error) {
+        currentUserWatchlist = [];
+    }
+}
+
+async function toggleWatchlist() {
+    if (!currentMovie) return;
+
+    // Check if logged in
+    let user;
+    try {
+        user = await account.get();
+    } catch {
+        showToast('⚠️ Please login to save movies!');
+        openAuth();
+        return;
+    }
+
+    const btn = document.getElementById('watchlistBtn');
+    const isInWatchlist = currentUserWatchlist.includes(currentMovie.imdb);
+
+    try {
+        let newWatchlist;
+        if (isInWatchlist) {
+            // Remove from watchlist
+            newWatchlist = currentUserWatchlist.filter(id => id !== currentMovie.imdb);
+            showToast(`✅ Removed "${currentMovie.title}" from watchlist`);
+        } else {
+            // Add to watchlist
+            newWatchlist = [...currentUserWatchlist, currentMovie.imdb];
+            showToast(`❤️ Added "${currentMovie.title}" to watchlist!`);
+        }
+
+        // Update Appwrite database
+        await databases.updateDocument(DATABASE_ID, USERS_COLLECTION, user.$id, {
+            watchlist: newWatchlist
+        });
+
+        currentUserWatchlist = newWatchlist;
+        updateWatchlistBtn();
+
+    } catch (error) {
+        console.error('Watchlist error:', error);
+        showToast('❌ Could not update watchlist');
+    }
+}
+
+function updateWatchlistBtn() {
+    const btn = document.getElementById('watchlistBtn');
+    if (!btn || !currentMovie) return;
+    const isInWatchlist = currentUserWatchlist.includes(currentMovie.imdb);
+    btn.textContent = isInWatchlist ? '❤️ Saved' : '❤️ Watchlist';
+    btn.classList.toggle('saved', isInWatchlist);
+}
+
+function showWatchlist() {
+    const watchlistMovies = movies.filter(m => currentUserWatchlist.includes(m.imdb));
+    if (watchlistMovies.length === 0) {
+        showToast('📺 Your watchlist is empty — add some movies!');
+        return;
+    }
+    showToast(`📺 You have ${watchlistMovies.length} movie(s) saved`);
+    // You can expand this to show a full watchlist modal later
+}
+
+// ═══════════════════════════════════════════════════
+//  MOVIE FUNCTIONS
+// ═══════════════════════════════════════════════════
+
+function createParticles() {
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 40; i++) {
+        const p = document.createElement('div');
+        p.classList.add('particle');
+        p.style.left = Math.random() * 100 + '%';
+        p.style.width = Math.random() * 3 + 1 + 'px';
+        p.style.height = p.style.width;
+        p.style.animationDuration = Math.random() * 10 + 8 + 's';
+        p.style.animationDelay = Math.random() * 10 + 's';
+        container.appendChild(p);
+    }
+}
+
+function renderMovies(list) {
+    const grid = document.getElementById('moviesGrid');
+    grid.innerHTML = '';
+    if (list.length === 0) {
+        grid.innerHTML = `
+            <div class="no-results" style="display:block">
+                <h3>No Results Found</h3>
+                <p>Try a different search or phase filter.</p>
+            </div>`;
+        return;
+    }
+    list.forEach(movie => {
+        const card = document.createElement('div');
+        card.className = 'movie-card';
+        card.innerHTML = `
+            <div class="movie-poster">
+                <img src="${movie.poster}" alt="${movie.title}" loading="lazy">
+                <span class="movie-phase-badge">Phase ${movie.phase}</span>
+                <span class="movie-rating">⭐ ${movie.rating}</span>
+                <div class="movie-overlay">
+                    <div class="overlay-content">
+                        <div class="play-btn">▶</div>
+                    </div>
+                </div>
+            </div>
+            <div class="movie-info">
+                <div class="movie-title">${movie.title}</div>
+                <div class="movie-meta">
+                    <span class="movie-year">${movie.year}</span>
+                    <span class="meta-dot">•</span>
+                    <span>${movie.duration}</span>
+                </div>
+            </div>`;
+        card.addEventListener('click', () => openMovie(movie));
+        grid.appendChild(card);
+    });
+}
+
+let currentPhase = 'all';
+let currentSearch = '';
+
+function filterPhase(phase, btn) {
+    currentPhase = phase;
+    document.querySelectorAll('.phase-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilters();
+}
+
+function searchMovies() {
+    currentSearch = document.getElementById('searchInput').value.toLowerCase();
+    applyFilters();
+}
+
+function applyFilters() {
+    let filtered = movies;
+    if (currentPhase !== 'all') filtered = filtered.filter(m => m.phase === currentPhase);
+    if (currentSearch) {
+        filtered = filtered.filter(m =>
+            m.title.toLowerCase().includes(currentSearch) ||
+            m.genre.toLowerCase().includes(currentSearch) ||
+            m.year.toString().includes(currentSearch)
+        );
+    }
+    renderMovies(filtered);
+}
+
+function openMovie(movie) {
+    currentMovie = movie;
+
+    document.getElementById('modalPhase').textContent = 'Phase ' + movie.phase;
+    document.getElementById('modalTitle').textContent = movie.title;
+    document.getElementById('sidebarPoster').src = movie.poster;
+    document.getElementById('sidebarPoster').alt = movie.title;
+    document.getElementById('sidebarRating').textContent = movie.rating + ' / 10';
+    document.getElementById('sidebarDesc').textContent = movie.desc;
+
+    const starsEl = document.querySelector('.stars');
+    const fullStars = Math.round(parseFloat(movie.rating) / 2);
+    starsEl.textContent = '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars);
+
+    document.getElementById('sidebarMeta').innerHTML = `
+        <span class="meta-tag">${movie.year}</span>
+        <span class="meta-tag">${movie.duration}</span>
+        ${movie.genre.split(', ').map(g => `<span class="meta-tag">${g}</span>`).join('')}`;
+
+    document.getElementById('movieFrame').src = `https://vsembed.ru/embed/movie?imdb=${movie.imdb}`;
+
+    // Update watchlist button
+    updateWatchlistBtn();
+
+    // More movies strip
+    const strip = document.getElementById('featuredStrip');
+    strip.innerHTML = '';
+    movies.filter(m => m.phase === movie.phase && m.title !== movie.title).slice(0, 8).forEach(m => {
+        const card = document.createElement('div');
+        card.className = 'strip-card';
+        card.innerHTML = `<img src="${m.poster}" alt="${m.title}"><p>${m.title}</p>`;
+        card.addEventListener('click', () => openMovie(m));
+        strip.appendChild(card);
+    });
+
+    document.getElementById('modal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.remove('active');
+    document.getElementById('movieFrame').src = '';
+    document.body.style.overflow = '';
+    currentMovie = null;
+}
+
+// ═══════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════
+function showToast(msg) {
+    // Remove existing toasts
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.style.cssText = `
+        position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
+        background:#1a1a1a; border:1px solid rgba(226,54,54,0.4);
+        color:white; padding:14px 24px; border-radius:30px;
+        font-size:14px; z-index:999999; font-weight:600;
+        box-shadow:0 5px 25px rgba(0,0,0,0.5); letter-spacing:0.5px;
+        white-space:nowrap;
+    `;
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// ═══════════════════════════════════════════════════
+//  EVENT LISTENERS
+// ═══════════════════════════════════════════════════
+document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+document.getElementById('authModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAuth();
+});
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        closeModal();
+        closeAuth();
+    }
+});
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+window.addEventListener('load', () => {
+    createParticles();
+    renderMovies(movies);
+    checkAuthState(); // Check if user is already logged in
+    setTimeout(() => {
+        document.getElementById('loader').classList.add('hidden');
+    }, 1600);
+});
+</script>
+</body>
+</html>
