@@ -1041,7 +1041,7 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
                     <button class="btn-favorite" onclick="saveProgress()" style="white-space:nowrap;padding:4px 10px">💾 Save</button>
                 </div>
             </div>
-            <div class="modal-sidebar">
+                    <div class="modal-sidebar">
                 <img id="sidebarPoster" src="" alt="" class="sidebar-poster">
                 <div class="sidebar-rating">
                     <span class="stars">★★★★★</span>
@@ -1049,40 +1049,45 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
                 </div>
                 <div class="sidebar-meta" id="sidebarMeta"></div>
                 <p class="sidebar-desc" id="sidebarDesc"></p>
-                <p class="sidebar-title">MORE MOVIES</p>
+                
+                <!-- Recommended movies strip -->
+                <p class="sidebar-title">MORE FROM THIS PHASE</p>
                 <div class="featured-strip" id="featuredStrip"></div>
-            </div>
-        </div>
-            <div class="comments-section">
-        <p class="sidebar-title">💬 COMMENTS</p>
+                
+                <!-- ✅ Comments NOW INSIDE sidebar -->
+                <div class="comments-section">
+                    <p class="sidebar-title">💬 COMMENTS</p>
 
-        <!-- Write a comment -->
-        <div class="comment-form" id="commentForm">
-            <textarea 
-                id="commentInput" 
-                placeholder="Share your thoughts about this movie..."
-                maxlength="500">
-            </textarea>
-            <div class="comment-form-footer">
-                <span id="commentCharCount">0/500</span>
-                <button class="comment-submit-btn" onclick="submitComment()">
-                    Post Comment
-                </button>
-            </div>
-        </div>
+                    <!-- Write a comment -->
+                    <div class="comment-form" id="commentForm">
+                        <textarea 
+                            id="commentInput" 
+                            placeholder="Share your thoughts about this movie..."
+                            maxlength="500">
+                        </textarea>
+                        <div class="comment-form-footer">
+                            <span id="commentCharCount">0/500</span>
+                            <button class="comment-submit-btn" onclick="submitComment()">
+                                Post Comment
+                            </button>
+                        </div>
+                    </div>
 
-        <!-- Login prompt if not logged in -->
-        <div class="comment-login-prompt" id="commentLoginPrompt">
-            <p>👤 <span onclick="openAuth()" style="color:var(--marvel-red);cursor:pointer;font-weight:700;">Login</span> to leave a comment</p>
-        </div>
+                    <!-- Login prompt if not logged in -->
+                    <div class="comment-login-prompt" id="commentLoginPrompt">
+                        <p>👤 <span onclick="openAuth()" style="color:var(--marvel-red);cursor:pointer;font-weight:700;">Login</span> to leave a comment</p>
+                    </div>
 
-        <!-- Comments list -->
-        <div class="comments-list" id="commentsList">
-            <div class="comments-loading">Loading comments...</div>
-        </div>
-    </div>
-</div>
-
+                    <!-- Comments list -->
+                    <div class="comments-list" id="commentsList">
+                        <div class="comments-loading">Loading comments...</div>
+                    </div>
+                </div>
+                
+            </div>  <!-- ✅ sidebar closes HERE -->
+        </div>  <!-- ✅ modal-body closes HERE -->
+    </div>  <!-- ✅ modal closes HERE -->
+</div>  <!-- ✅ modal-overlay closes HERE -->
 <!-- FOOTER -->
 <footer>
     <div class="footer-top">
