@@ -423,21 +423,64 @@
     background: #000;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     align-items: center;
-    padding: 20px 20px 0;
-   height: 500px;
+    padding: 0; /* Reset padding */
+    height: 100%;
+    width: 100%;
+    min-height: 500px;
 }
 
+.progress-tracker {
+    margin-top: auto; /* Pushes to bottom */
+    width: 95%;       /* Fixed width */
+    max-width: 800px;
+    background: rgba(0,0,0,0.6);
+    padding: 10px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: sticky;
+    bottom: 0;
+}
+
+/* Make the slider smoother */
+.progress-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(to right, var(--marvel-red) calc(var(--progress-val, 0%) * 1%), rgba(255,255,255,0.2) 0%);
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.3s ease;
+}
+
+.progress-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    transition: transform 0.2s;
+}
+
+.progress-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
 .modal-body {
     display: grid;
     grid-template-columns: 1fr 320px;
     max-height: 85vh;
-    overflow: visible; /* ← was 'hidden', clipping tracker */
+    overflow: visible; 
 }
 .modal-player iframe {
     width: 92%;
     max-width: 820px;
-    height: 420px; /* slightly reduced to make room */
+    height: 530px; /* slightly reduced to make room */
     border-radius: 12px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.7);
     flex-shrink: 0;
@@ -840,6 +883,9 @@ let userFavorites = [];
 let userWatchlist = [];
 let userWatching = [];
 let currentProgress = 0;
+let watchStartTime = null;
+let progressUpdateInterval = null;
+let lastSavedProgress = 0;
 
 // ═══════════════════════════════════════════════════
 //  MOVIES DATA
@@ -1368,7 +1414,71 @@ function openMovie(movie) {
     document.getElementById('progressSlider').value = savedProgress;
     document.getElementById('progressPercent').textContent = savedProgress + '%';
     currentProgress = savedProgress;
+// ⭐ NEW: Reset tracker
+    watchStartTime = Date.now();
+    currentProgress = savedProgress;
+    lastSavedProgress = savedProgress;
+    
+    // ⭐ NEW: Start the auto-update timer (runs every 2 seconds)
+    progressUpdateInterval = setInterval(() => {
+        if (!document.getElementById('movieFrame')) return; // Safety check
+        
+        // Update UI to look live
+        let nowProgress = Math.min(Math.round(((Date.now() - watchStartTime) / 60000) * (savedItem?.totalDuration || 2)), 100); 
+        // NOTE: Since we don't know total movie length, we simulate growth based on time watched
+        // Or better yet, just keep the slider manual but sync 'lastSaved'
+        
+        // Better approach for iframe-less-control: 
+        // Just update the saved variable constantly to memory
+        lastSavedProgress = parseInt(document.getElementById('progressSlider').value);
+        
+    }, 2000); // Updates every 2 seconds
+    
+function updateProgress(val) {
+    const percent = parseInt(val);
+    document.getElementById('progressPercent').textContent = percent + '%';
+    lastSavedProgress = percent; // Always update our backup tracker
+    currentProgress = percent;
+}
+    function saveProgress() {
+    if (!currentMovie) return;
+    if (!currentUser) { showToast('⚠️ Please login to save progress!'); openAuth(); return; }
 
+    // Use the LAST KNOWN good progress value, not the current input
+    let savePercentage = lastSavedProgress; 
+
+    const existing = userWatching.find(w => w.imdb === currentMovie.imdb);
+    if (existing) {
+        existing.progress = savePercentage;
+        existing.lastWatched = new Date().toISOString();
+    } else {
+        userWatching.unshift({
+            imdb: currentMovie.imdb,
+            title: currentMovie.title,
+            poster: currentMovie.poster,
+            progress: savePercentage,
+            lastWatched: new Date().toISOString()
+        });
+    }
+    
+    saveUserData(); // Saves to LocalStorage
+    renderContinueWatching(); // Re-draw the continue section
+    showToast(`💾 Saved at ${savePercentage}%`, true); // Green toast
+}
+    function closeModal() {
+
+    clearInterval(progressUpdateInterval);
+    
+    document.getElementById('modal').classList.remove('active');
+    document.getElementById('movieFrame').src = '';
+    document.body.style.overflow = '';
+    currentMovie = null;
+    
+ 
+    saveProgress(); 
+}
+    document.getElementById('modal').classList.add('active');
+}
    document.getElementById('movieFrame').src = `https://vsembed.ru/embed/movie?imdb=${movie.imdb}`;
 
     updateModalButtons();
