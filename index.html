@@ -945,6 +945,38 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
     min-height: 0;     /* ← Allows shrinking */
     padding-right: 4px;
 }
+    .load-more-btn {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0;
+    flex-shrink: 0;
+}
+
+.load-more-btn button {
+    background: rgba(226,54,54,0.1);
+    border: 1px solid rgba(226,54,54,0.3);
+    color: var(--marvel-red);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+}
+
+.load-more-btn button:hover {
+    background: var(--marvel-red);
+    border-color: var(--marvel-red);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.load-more-btn button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
 </style>
 </head>
 <body>
@@ -1576,33 +1608,217 @@ function clearAllWatching(e) {
 // ═══════════════════════════════════════════════════
 
 async function loadComments(imdb) {
+// ═══════════════════════════════════════════════════
+//  COMMENTS - with pagination
+// ═══════════════════════════════════════════════════
+
+let currentCommentOffset = 0;
+const COMMENTS_PER_PAGE = 10;
+let hasMoreComments = false;
+let currentMovieImdb = null;
+
+async function loadComments(imdb, append = false) {
     const list = document.getElementById('commentsList');
     if (!list) return;
-    list.innerHTML = '<div class="comments-loading">Loading comments...</div>';
+
+    // Store current movie for "Load More"
+    currentMovieImdb = imdb;
+
+    // If not appending (initial load), reset and show loading
+    if (!append) {
+        currentCommentOffset = 0;
+        list.innerHTML = '<div class="comments-loading">Loading comments...</div>';
+    }
 
     try {
-        const { data, error } = await sb
+        const { data, error, count } = await sb
             .from('comments')
-            .select('*')
+            .select('*', { count: 'exact' })
             .eq('movie_imdb', imdb)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .range(currentCommentOffset, currentCommentOffset + COMMENTS_PER_PAGE - 1);
 
         if (error) throw error;
 
-        if (data.length === 0) {
+        // Remove loading message on first load
+        if (!append) {
+            list.innerHTML = '';
+        }
+
+        // Remove old "Load More" button if it exists
+        const oldLoadMoreBtn = list.querySelector('.load-more-btn');
+        if (oldLoadMoreBtn) oldLoadMoreBtn.remove();
+
+        // If no comments at all
+        if (data.length === 0 && currentCommentOffset === 0) {
             list.innerHTML = '<div class="no-comments">💬 No comments yet. Be the first!</div>';
+            hasMoreComments = false;
             return;
         }
 
-        list.innerHTML = '';
+        // Append new comments
         data.forEach(comment => list.appendChild(createCommentCard(comment)));
 
+        // Update offset for next load
+        currentCommentOffset += data.length;
+
+        // Check if there are more comments
+        hasMoreComments = currentCommentOffset < count;
+
+        // Add "Load More" button if there are more
+        if (hasMoreComments) {
+            const loadMoreBtn = document.createElement('div');
+            loadMoreBtn.className = 'load-more-btn';
+            loadMoreBtn.innerHTML = `
+                <button onclick="loadMoreComments()">
+                    📥 Load More (${count - currentCommentOffset} remaining)
+                </button>
+            `;
+            list.appendChild(loadMoreBtn);
+        }
+
     } catch (err) {
-        list.innerHTML = '<div class="no-comments">❌ Could not load comments.</div>';
+        if (!append) {
+            list.innerHTML = '<div class="no-comments">❌ Could not load comments.</div>';
+        }
         console.error(err);
     }
 }
 
+// Load more comments
+async function loadMoreComments() {
+    if (!currentMovieImdb || !hasMoreComments) return;
+    
+    // Show loading state on button
+    const loadMoreBtn = document.querySelector('.load-more-btn button');
+    if (loadMoreBtn) {
+        loadMoreBtn.disabled = true;
+        loadMoreBtn.textContent = '⏳ Loading...';
+    }
+    
+    await loadComments(currentMovieImdb, true);
+}
+
+// Updated createCommentCard (no changes needed, just for reference)
+function createCommentCard(comment) {
+    const card = document.createElement('div');
+    card.className = 'comment-card';
+    card.id = 'comment-' + comment.id;
+
+    const initials = comment.username.slice(0, 2).toUpperCase();
+    const timeAgo = formatTimeAgo(comment.created_at);
+    const isOwner = currentUser && currentUser.id === comment.user_id;
+
+    card.innerHTML = `
+        <div class="comment-header">
+            <div class="comment-user">
+                <div class="comment-avatar">${initials}</div>
+                <div>
+                    <div class="comment-username">${escapeHtml(comment.username)}</div>
+                    <div class="comment-time">${timeAgo}</div>
+                </div>
+            </div>
+        </div>
+        <div class="comment-content">${escapeHtml(comment.content)}</div>
+        <div class="comment-actions">
+            ${isOwner ? `
+                <button class="comment-action-btn comment-delete-btn"
+                    onclick="deleteComment('${comment.id}')">
+                    🗑️ Delete
+                </button>` : ''}
+        </div>`;
+
+    return card;
+}
+
+// Updated submitComment to add new comment at top
+async function submitComment() {
+    if (!currentUser) { openAuth(); return; }
+    if (!currentMovie) return;
+
+    const input = document.getElementById('commentInput');
+    const btn = document.querySelector('.comment-submit-btn');
+    const content = input.value.trim();
+
+    if (!content) { showToast('⚠️ Please write something first!'); return; }
+    if (content.length > 500) { showToast('⚠️ Comment too long!'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Posting...';
+
+    try {
+        const username = currentUser.user_metadata?.username 
+            || currentUser.email.split('@')[0];
+
+        const { data, error } = await sb
+            .from('comments')
+            .insert({
+                user_id: currentUser.id,
+                username: username,
+                movie_imdb: currentMovie.imdb,
+                content: content
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        const list = document.getElementById('commentsList');
+        const noComments = list.querySelector('.no-comments');
+        if (noComments) noComments.remove();
+
+        // Add to TOP of list
+        const card = createCommentCard(data);
+        list.insertBefore(card, list.firstChild);
+
+        // Clear input
+        input.value = '';
+        document.getElementById('commentCharCount').textContent = '0/500';
+
+        // Scroll to top of comments to show new comment
+        list.scrollTop = 0;
+
+        showToast('💬 Comment posted!');
+
+    } catch (err) {
+        showToast('❌ Failed to post comment');
+        console.error(err);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Post Comment';
+    }
+}
+
+// Updated deleteComment
+async function deleteComment(commentId) {
+    if (!currentUser) return;
+    try {
+        const { error } = await sb
+            .from('comments')
+            .delete()
+            .eq('id', commentId)
+            .eq('user_id', currentUser.id);
+
+        if (error) throw error;
+
+        const card = document.getElementById('comment-' + commentId);
+        if (card) card.remove();
+
+        const list = document.getElementById('commentsList');
+        // Only show "no comments" if list is completely empty (no cards, no load more button)
+        if (!list.querySelector('.comment-card') && !list.querySelector('.load-more-btn')) {
+            list.innerHTML = '<div class="no-comments">💬 No comments yet. Be the first!</div>';
+        }
+
+        showToast('🗑️ Comment deleted');
+
+    } catch (err) {
+        showToast('❌ Could not delete comment');
+        console.error(err);
+    }
+}
+
+// Keep all your other comment functions the same (updateCommentUI, formatTimeAgo, escapeHtml)
 function createCommentCard(comment) {
     const card     = document.createElement('div');
     card.className = 'comment-card';
