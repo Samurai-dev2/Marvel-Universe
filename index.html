@@ -456,29 +456,25 @@ nav {
     height: calc(100vh - 80px); /* full height minus header */
     overflow: hidden;
 }
-
-/* Left column — player fills entire left side */
 .modal-player {
     background: #000;
     display: flex;
     flex-direction: column;
-    align-items: stretch;     /* stretch iframe to full width */
-    justify-content: stretch;
-    padding: 0;               /* no padding so iframe fills everything */
+    align-items: center;
+    justify-content: center;
+    padding: 16px 16px 12px;
     overflow: hidden;
-    height: 100%;
+    gap: 10px;
 }
 
-/* Iframe fills ALL available space */
 .modal-player iframe {
-    width: 100%;
+    width: 100%;      /* ← full width of the padded column */
     flex: 1;
     min-height: 0;
     border: none;
-    border-radius: 0;         /* no rounding so it touches the edges */
-    display: block;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
 }
-
 /* Progress bar — thin, sits at very bottom of player */
 .progress-tracker {
     flex-shrink: 0;
@@ -1140,7 +1136,6 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
     style="width:100%; height:100%;"
     frameborder="0"
     referrerpolicy="no-referrer"
-   
     allowfullscreen>
 </iframe>
                 <div class="progress-tracker">
@@ -1196,11 +1191,11 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
 <footer>
     <div class="footer-top">
         <div class="footer-brand">
-            <div class="logo-box">MARVEL</div>
-            <p>Stream the complete Marvel Cinematic Universe. Every hero, every story, every battle — all in one place.</p>
+            <div class="logo-box">Ibrahim/Derar</div>
+            <p>This is just a school project sooo dont take me down pls.</p>
         </div>
         <div class="footer-col">
-            <h4>Phases</h4>
+            <h4>Phases FYI</h4>
             <ul>
                 <li><a href="#">Phase 1 — The Beginning</a></li>
                 <li><a href="#">Phase 2 — Expansion</a></li>
@@ -1210,22 +1205,10 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
             </ul>
         </div>
         <div class="footer-col">
-            <h4>Heroes</h4>
+            <h4>Contributers/made by</h4>
             <ul>
-                <li><a href="#">Iron Man</a></li>
-                <li><a href="#">Captain America</a></li>
-                <li><a href="#">Thor</a></li>
-                <li><a href="#">Black Panther</a></li>
-                <li><a href="#">Spider-Man</a></li>
-            </ul>
-        </div>
-        <div class="footer-col">
-            <h4>Info</h4>
-            <ul>
-                <li><a href="#">About Us</a></li>
-                <li><a href="#">Contact</a></li>
-                <li><a href="#">Privacy Policy</a></li>
-                <li><a href="#">DMCA</a></li>
+               <li>Ibrahim(samurai.dev) MAIN CODER</li>
+                <li>Derrar: TESTER plus emotional support</li>
             </ul>
         </div>
     </div>
