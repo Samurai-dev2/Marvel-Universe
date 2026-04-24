@@ -862,14 +862,9 @@
 </footer>
 
 <script>
-// ═══════════════════════════════════════════════════
-//  SUPABASE SETUP
-//  ⚠️ Use your ANON key (not service role key!)
-// ═══════════════════════════════════════════════════
 const { createClient } = supabase;
 
 const SUPABASE_URL = 'https://mdgyhsxeepserienlrik.supabase.co';
-// ⚠️ GET YOUR ANON KEY from Supabase → Settings → API → anon public
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kZ3loc3hlZXBzZXJpZW5scmlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5NjczNDUsImV4cCI6MjA5MjU0MzM0NX0.NIW64wv0tDj5dtlyN0FEOLD9MuNFMUZOwi_FrlnJD9Q';
 
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -954,12 +949,10 @@ async function handleSignup(e) {
             options: { data: { username } }
         });
         if (error) throw error;
-
         currentUser = data.user;
         closeAuth();
         updateNavForUser({ username, email });
         showToast(`Welcome to Marvel Universe, ${username}! 🦸`);
-
     } catch (error) {
         errorEl.textContent = error.message.includes('already registered')
             ? '❌ Email already registered'
@@ -985,14 +978,12 @@ async function handleLogin(e) {
     try {
         const { data, error } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
-
         currentUser = data.user;
         await loadUserData();
         const username = currentUser.user_metadata?.username || email.split('@')[0];
         closeAuth();
         updateNavForUser({ username, email });
         showToast(`Welcome back, ${username}! 🦸`);
-
     } catch (error) {
         errorEl.textContent = '❌ Wrong email or password';
         shakeForm('loginForm');
@@ -1046,7 +1037,7 @@ async function checkAuthState() {
 }
 
 // ═══════════════════════════════════════════════════
-//  USER DATA (localStorage fallback for watchlist/favorites)
+//  USER DATA
 // ═══════════════════════════════════════════════════
 
 async function loadUserData() {
@@ -1076,7 +1067,6 @@ function saveUserData() {
 function toggleWatchlist() {
     if (!currentMovie) return;
     if (!currentUser) { showToast('⚠️ Please login first!'); openAuth(); return; }
-
     const idx = userWatchlist.indexOf(currentMovie.imdb);
     if (idx === -1) {
         userWatchlist.push(currentMovie.imdb);
@@ -1096,7 +1086,6 @@ function toggleWatchlist() {
 function toggleFavorite() {
     if (!currentMovie) return;
     if (!currentUser) { showToast('⚠️ Please login first!'); openAuth(); return; }
-
     const idx = userFavorites.indexOf(currentMovie.imdb);
     if (idx === -1) {
         userFavorites.push(currentMovie.imdb);
@@ -1110,35 +1099,99 @@ function toggleFavorite() {
 }
 
 // ═══════════════════════════════════════════════════
-//  CONTINUE WATCHING / PROGRESS
+//  PROGRESS — parses duration string into total minutes
 // ═══════════════════════════════════════════════════
 
-function updateProgress(val) {
-    currentProgress = parseInt(val);
-    document.getElementById('progressPercent').textContent = val + '%';
+function parseDurationToMinutes(duration) {
+    // Handles formats like "2h 6m", "1h 52m", "3h 2m"
+    const match = duration.match(/(?:(\d+)h)?\s*(?:(\d+)m)?/);
+    const hours = parseInt(match[1] || 0);
+    const mins = parseInt(match[2] || 0);
+    return hours * 60 + mins;
 }
 
-function saveProgress() {
-    if (!currentMovie) return;
-    if (!currentUser) { showToast('⚠️ Please login to save progress!'); openAuth(); return; }
+// ─── Called every second by the timer ───
+function tickProgress() {
+    if (!currentMovie || !watchStartTime) return;
 
+    const totalMinutes = parseDurationToMinutes(currentMovie.duration);
+    if (totalMinutes === 0) return;
+
+    // How many minutes have elapsed since we opened the player
+    const elapsedMinutes = (Date.now() - watchStartTime) / 60000;
+
+    // Convert to percentage, capped at 100
+    const newPercent = Math.min(Math.round((elapsedMinutes / totalMinutes) * 100), 100);
+
+    // Only move slider forward (don't reset if user dragged it ahead)
+    if (newPercent > currentProgress) {
+        currentProgress = newPercent;
+        lastSavedProgress = newPercent;
+        const slider = document.getElementById('progressSlider');
+        const label  = document.getElementById('progressPercent');
+        if (slider) slider.value = newPercent;
+        if (label)  label.textContent = newPercent + '%';
+    }
+
+    // Auto-save to localStorage every minute
+    if (newPercent % 5 === 0 && currentUser) {
+        _persistProgress(newPercent);
+    }
+
+    // Auto-add to "Continue Watching" when finished
+    if (newPercent >= 100) {
+        clearInterval(progressUpdateInterval);
+        _persistProgress(100);
+        renderContinueWatching();
+        showToast('🎉 Movie complete! Added to continue watching.');
+    }
+}
+
+// ─── Internal: write progress to userWatching array ───
+function _persistProgress(percent) {
+    if (!currentMovie) return;
     const existing = userWatching.find(w => w.imdb === currentMovie.imdb);
     if (existing) {
-        existing.progress = currentProgress;
+        existing.progress = percent;
         existing.lastWatched = new Date().toISOString();
     } else {
         userWatching.unshift({
             imdb: currentMovie.imdb,
             title: currentMovie.title,
             poster: currentMovie.poster,
-            progress: currentProgress,
+            progress: percent,
             lastWatched: new Date().toISOString()
         });
     }
     saveUserData();
-    renderContinueWatching();
-    showToast(`💾 Progress saved: ${currentProgress}%`);
 }
+
+// ─── Called when user drags the slider manually ───
+function updateProgress(val) {
+    const percent = parseInt(val);
+    currentProgress = percent;
+    lastSavedProgress = percent;
+    document.getElementById('progressPercent').textContent = percent + '%';
+
+    // Rebase the timer so auto-tick continues from this point
+    if (currentMovie) {
+        const totalMinutes = parseDurationToMinutes(currentMovie.duration);
+        watchStartTime = Date.now() - (percent / 100) * totalMinutes * 60000;
+    }
+}
+
+// ─── Save button ───
+function saveProgress() {
+    if (!currentMovie) return;
+    if (!currentUser) { showToast('⚠️ Please login to save progress!'); openAuth(); return; }
+    _persistProgress(lastSavedProgress);
+    renderContinueWatching();
+    showToast(`💾 Progress saved: ${lastSavedProgress}%`);
+}
+
+// ═══════════════════════════════════════════════════
+//  CONTINUE WATCHING
+// ═══════════════════════════════════════════════════
 
 function renderContinueWatching() {
     const section = document.getElementById('continueSection');
@@ -1390,12 +1443,21 @@ function applyFilters() {
     renderMovies(filtered);
 }
 
-function openMovie(movie) {
-    currentMovie = movie;
-    currentProgress = 0;
+// ═══════════════════════════════════════════════════
+//  OPEN MOVIE — clean, no nested functions
+// ═══════════════════════════════════════════════════
 
+function openMovie(movie) {
+    // Stop any existing timer first
+    clearInterval(progressUpdateInterval);
+
+    currentMovie = movie;
+
+    // ── Populate header ──
     document.getElementById('modalPhase').textContent = 'Phase ' + movie.phase;
     document.getElementById('modalTitle').textContent = movie.title;
+
+    // ── Populate sidebar ──
     document.getElementById('sidebarPoster').src = movie.poster;
     document.getElementById('sidebarRating').textContent = movie.rating + ' / 10';
     document.getElementById('sidebarDesc').textContent = movie.desc;
@@ -1408,96 +1470,61 @@ function openMovie(movie) {
         <span class="meta-tag">${movie.duration}</span>
         ${movie.genre.split(', ').map(g => `<span class="meta-tag">${g}</span>`).join('')}`;
 
-    // Load saved progress
+    // ── Load saved progress ──
     const savedItem = userWatching.find(w => w.imdb === movie.imdb);
     const savedProgress = savedItem ? savedItem.progress : 0;
-    document.getElementById('progressSlider').value = savedProgress;
-    document.getElementById('progressPercent').textContent = savedProgress + '%';
-    currentProgress = savedProgress;
-// ⭐ NEW: Reset tracker
-    watchStartTime = Date.now();
     currentProgress = savedProgress;
     lastSavedProgress = savedProgress;
-    
-    // ⭐ NEW: Start the auto-update timer (runs every 2 seconds)
-    progressUpdateInterval = setInterval(() => {
-        if (!document.getElementById('movieFrame')) return; // Safety check
-        
-        // Update UI to look live
-        let nowProgress = Math.min(Math.round(((Date.now() - watchStartTime) / 60000) * (savedItem?.totalDuration || 2)), 100); 
-        // NOTE: Since we don't know total movie length, we simulate growth based on time watched
-        // Or better yet, just keep the slider manual but sync 'lastSaved'
-        
-        // Better approach for iframe-less-control: 
-        // Just update the saved variable constantly to memory
-        lastSavedProgress = parseInt(document.getElementById('progressSlider').value);
-        
-    }, 2000); // Updates every 2 seconds
-    
-function updateProgress(val) {
-    const percent = parseInt(val);
-    document.getElementById('progressPercent').textContent = percent + '%';
-    lastSavedProgress = percent; // Always update our backup tracker
-    currentProgress = percent;
-}
-    function saveProgress() {
-    if (!currentMovie) return;
-    if (!currentUser) { showToast('⚠️ Please login to save progress!'); openAuth(); return; }
+    document.getElementById('progressSlider').value = savedProgress;
+    document.getElementById('progressPercent').textContent = savedProgress + '%';
 
-    // Use the LAST KNOWN good progress value, not the current input
-    let savePercentage = lastSavedProgress; 
+    // ── Start timer, offset by already-watched percentage ──
+    const totalMinutes = parseDurationToMinutes(movie.duration);
+    watchStartTime = Date.now() - (savedProgress / 100) * totalMinutes * 60000;
 
-    const existing = userWatching.find(w => w.imdb === currentMovie.imdb);
-    if (existing) {
-        existing.progress = savePercentage;
-        existing.lastWatched = new Date().toISOString();
-    } else {
-        userWatching.unshift({
-            imdb: currentMovie.imdb,
-            title: currentMovie.title,
-            poster: currentMovie.poster,
-            progress: savePercentage,
-            lastWatched: new Date().toISOString()
-        });
-    }
-    
-    saveUserData(); // Saves to LocalStorage
-    renderContinueWatching(); // Re-draw the continue section
-    showToast(`💾 Saved at ${savePercentage}%`, true); // Green toast
-}
-    function closeModal() {
+    // Tick every second for smooth progress
+    progressUpdateInterval = setInterval(tickProgress, 1000);
 
-    clearInterval(progressUpdateInterval);
-    
-    document.getElementById('modal').classList.remove('active');
-    document.getElementById('movieFrame').src = '';
-    document.body.style.overflow = '';
-    currentMovie = null;
-    
- 
-    saveProgress(); 
-}
-    document.getElementById('modal').classList.add('active');
-}
-   document.getElementById('movieFrame').src = `https://vsembed.ru/embed/movie?imdb=${movie.imdb}`;
+    // ── Load iframe ──
+    document.getElementById('movieFrame').src =
+        `https://vidsrcme.su/embed/movie?imdb=${movie.imdb}`;
 
+    // ── Watchlist / favorite buttons ──
     updateModalButtons();
 
+    // ── Related movies strip ──
     const strip = document.getElementById('featuredStrip');
     strip.innerHTML = '';
-    movies.filter(m => m.phase === movie.phase && m.title !== movie.title).slice(0, 8).forEach(m => {
-        const card = document.createElement('div');
-        card.className = 'strip-card';
-        card.innerHTML = `<img src="${m.poster}" alt="${m.title}"><p>${m.title}</p>`;
-        card.addEventListener('click', () => openMovie(m));
-        strip.appendChild(card);
-    });
+    movies
+        .filter(m => m.phase === movie.phase && m.title !== movie.title)
+        .slice(0, 8)
+        .forEach(m => {
+            const card = document.createElement('div');
+            card.className = 'strip-card';
+            card.innerHTML = `<img src="${m.poster}" alt="${m.title}"><p>${m.title}</p>`;
+            card.addEventListener('click', () => openMovie(m));
+            strip.appendChild(card);
+        });
 
+    // ── Show modal ──
     document.getElementById('modal').classList.add('active');
     document.body.style.overflow = 'hidden';
 }
 
+// ═══════════════════════════════════════════════════
+//  CLOSE MODAL — auto-saves progress on close
+// ═══════════════════════════════════════════════════
+
 function closeModal() {
+    // Stop the ticker
+    clearInterval(progressUpdateInterval);
+
+    // Auto-save whatever progress we reached
+    if (currentMovie && currentUser && lastSavedProgress > 0) {
+        _persistProgress(lastSavedProgress);
+        renderContinueWatching();
+    }
+
     document.getElementById('modal').classList.remove('active');
     document.getElementById('movieFrame').src = '';
     document.body.style.overflow = '';
@@ -1528,9 +1555,15 @@ function showToast(msg) {
 //  EVENT LISTENERS
 // ═══════════════════════════════════════════════════
 
-document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
-document.getElementById('authModal').addEventListener('click', e => { if (e.target === document.getElementById('authModal')) closeAuth(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeAuth(); } });
+document.getElementById('modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal')) closeModal();
+});
+document.getElementById('authModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('authModal')) closeAuth();
+});
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeModal(); closeAuth(); }
+});
 document.addEventListener('DOMContentLoaded', () => {
     const p = document.getElementById('signupPassword');
     if (p) p.addEventListener('input', checkStrength);
