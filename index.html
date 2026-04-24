@@ -1237,15 +1237,21 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ═══════════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════════
-let currentMovie = null;
-let currentUser = null;
-let userFavorites = [];
-let userWatchlist = [];
-let userWatching = [];
-let currentProgress = 0;
-let watchStartTime = null;
+let currentMovie        = null;
+let currentUser         = null;
+let userFavorites       = [];
+let userWatchlist       = [];
+let userWatching        = [];
+let currentProgress     = 0;
+let watchStartTime      = null;
 let progressUpdateInterval = null;
-let lastSavedProgress = 0;
+let lastSavedProgress   = 0;
+
+// Comment pagination state
+let currentCommentOffset = 0;
+const COMMENTS_PER_PAGE  = 10;
+let hasMoreComments      = false;
+let currentMovieImdb     = null;
 
 // ═══════════════════════════════════════════════════
 //  MOVIES DATA
@@ -1317,6 +1323,7 @@ async function handleSignup(e) {
         currentUser = data.user;
         closeAuth();
         updateNavForUser({ username, email });
+        updateCommentUI();
         showToast(`Welcome to Marvel Universe, ${username}! 🦸`);
     } catch (err) {
         errorEl.textContent = err.message.includes('already registered')
@@ -1348,8 +1355,8 @@ async function handleLogin(e) {
         const username = currentUser.user_metadata?.username || email.split('@')[0];
         closeAuth();
         updateNavForUser({ username, email });
-        showToast(`Welcome back, ${username}! 🦸`);
         updateCommentUI();
+        showToast(`Welcome back, ${username}! 🦸`);
     } catch (err) {
         errorEl.textContent = '❌ Wrong email or password';
         shakeForm('loginForm');
@@ -1361,7 +1368,7 @@ async function handleLogin(e) {
 
 async function logoutUser() {
     await sb.auth.signOut();
-    currentUser = null;
+    currentUser   = null;
     userFavorites = [];
     userWatchlist = [];
     userWatching  = [];
@@ -1383,8 +1390,8 @@ async function handleForgotPassword() {
         document.getElementById('loginError').style.color = '#44ff88';
         document.getElementById('loginError').textContent = '✅ Reset email sent!';
         setTimeout(() => {
-            document.getElementById('loginError').style.color = '';
-            document.getElementById('loginError').textContent = '';
+            document.getElementById('loginError').style.color   = '';
+            document.getElementById('loginError').textContent   = '';
         }, 4000);
     } catch (err) {
         document.getElementById('loginError').textContent = '❌ Email not found';
@@ -1409,7 +1416,7 @@ async function checkAuthState() {
 
 async function loadUserData() {
     if (!currentUser) return;
-    const key  = 'marvel_' + currentUser.id;
+    const key   = 'marvel_' + currentUser.id;
     const saved = JSON.parse(localStorage.getItem(key) || '{}');
     userFavorites = saved.favorites || [];
     userWatchlist = saved.watchlist || [];
@@ -1485,7 +1492,7 @@ function tickProgress() {
     const newPercent = Math.min(Math.round((elapsedMinutes / totalMinutes) * 100), 100);
 
     if (newPercent > currentProgress) {
-        currentProgress  = newPercent;
+        currentProgress   = newPercent;
         lastSavedProgress = newPercent;
         const slider = document.getElementById('progressSlider');
         const label  = document.getElementById('progressPercent');
@@ -1493,6 +1500,7 @@ function tickProgress() {
         if (label)  label.textContent = newPercent + '%';
     }
 
+    // Auto-save every 5% milestone
     if (newPercent % 5 === 0 && newPercent > 0 && currentUser) {
         _persistProgress(newPercent);
     }
@@ -1501,7 +1509,7 @@ function tickProgress() {
         clearInterval(progressUpdateInterval);
         _persistProgress(100);
         renderContinueWatching();
-        showToast('🎉 Movie complete!');
+        showToast('🎉 Movie complete! Great watch!');
     }
 }
 
@@ -1566,7 +1574,7 @@ function renderContinueWatching() {
         card.innerHTML = `
             <button class="continue-remove" onclick="removeFromWatching('${item.imdb}', event)">✕</button>
             <div class="continue-poster">
-                <img src="${item.poster}" alt="${item.title}">
+                <img src="${item.poster}" alt="${item.title}" loading="lazy">
                 <div class="progress-bar-container">
                     <div class="progress-bar-fill" style="width:${item.progress}%"></div>
                 </div>
@@ -1607,27 +1615,19 @@ function clearAllWatching(e) {
 //  COMMENTS
 // ═══════════════════════════════════════════════════
 
-async function loadComments(imdb) {
-// ═══════════════════════════════════════════════════
-//  COMMENTS - with pagination
-// ═══════════════════════════════════════════════════
-
-let currentCommentOffset = 0;
-const COMMENTS_PER_PAGE = 10;
-let hasMoreComments = false;
-let currentMovieImdb = null;
-
 async function loadComments(imdb, append = false) {
     const list = document.getElementById('commentsList');
     if (!list) return;
 
-    // Store current movie for "Load More"
     currentMovieImdb = imdb;
 
-    // If not appending (initial load), reset and show loading
     if (!append) {
         currentCommentOffset = 0;
-        list.innerHTML = '<div class="comments-loading">Loading comments...</div>';
+        list.innerHTML = `
+            <div class="comments-loading">
+                <div class="comment-spinner"></div>
+                Loading comments...
+            </div>`;
     }
 
     try {
@@ -1640,198 +1640,75 @@ async function loadComments(imdb, append = false) {
 
         if (error) throw error;
 
-        // Remove loading message on first load
-        if (!append) {
-            list.innerHTML = '';
-        }
+        if (!append) list.innerHTML = '';
 
-        // Remove old "Load More" button if it exists
-        const oldLoadMoreBtn = list.querySelector('.load-more-btn');
-        if (oldLoadMoreBtn) oldLoadMoreBtn.remove();
+        // Remove old load more button
+        const oldBtn = list.querySelector('.load-more-btn');
+        if (oldBtn) oldBtn.remove();
 
-        // If no comments at all
         if (data.length === 0 && currentCommentOffset === 0) {
-            list.innerHTML = '<div class="no-comments">💬 No comments yet. Be the first!</div>';
+            list.innerHTML = '<div class="no-comments">💬 No comments yet. Be the first hero to comment!</div>';
             hasMoreComments = false;
             return;
         }
 
-        // Append new comments
-        data.forEach(comment => list.appendChild(createCommentCard(comment)));
+        // Animate each comment in
+        data.forEach((comment, i) => {
+            const card = createCommentCard(comment);
+            card.style.animationDelay = `${i * 0.05}s`;
+            list.appendChild(card);
+        });
 
-        // Update offset for next load
         currentCommentOffset += data.length;
-
-        // Check if there are more comments
         hasMoreComments = currentCommentOffset < count;
 
-        // Add "Load More" button if there are more
         if (hasMoreComments) {
+            const remaining = count - currentCommentOffset;
             const loadMoreBtn = document.createElement('div');
             loadMoreBtn.className = 'load-more-btn';
             loadMoreBtn.innerHTML = `
                 <button onclick="loadMoreComments()">
-                    📥 Load More (${count - currentCommentOffset} remaining)
-                </button>
-            `;
+                    📥 Load ${Math.min(remaining, COMMENTS_PER_PAGE)} More
+                    <span style="opacity:0.6;font-weight:400">(${remaining} remaining)</span>
+                </button>`;
             list.appendChild(loadMoreBtn);
         }
 
     } catch (err) {
         if (!append) {
-            list.innerHTML = '<div class="no-comments">❌ Could not load comments.</div>';
+            list.innerHTML = '<div class="no-comments">❌ Could not load comments. Try again later.</div>';
         }
-        console.error(err);
+        console.error('Comment load error:', err);
     }
 }
 
-// Load more comments
 async function loadMoreComments() {
     if (!currentMovieImdb || !hasMoreComments) return;
-    
-    // Show loading state on button
-    const loadMoreBtn = document.querySelector('.load-more-btn button');
-    if (loadMoreBtn) {
-        loadMoreBtn.disabled = true;
-        loadMoreBtn.textContent = '⏳ Loading...';
+    const btn = document.querySelector('.load-more-btn button');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Loading...';
     }
-    
     await loadComments(currentMovieImdb, true);
 }
 
-// Updated createCommentCard (no changes needed, just for reference)
-function createCommentCard(comment) {
-    const card = document.createElement('div');
-    card.className = 'comment-card';
-    card.id = 'comment-' + comment.id;
-
-    const initials = comment.username.slice(0, 2).toUpperCase();
-    const timeAgo = formatTimeAgo(comment.created_at);
-    const isOwner = currentUser && currentUser.id === comment.user_id;
-
-    card.innerHTML = `
-        <div class="comment-header">
-            <div class="comment-user">
-                <div class="comment-avatar">${initials}</div>
-                <div>
-                    <div class="comment-username">${escapeHtml(comment.username)}</div>
-                    <div class="comment-time">${timeAgo}</div>
-                </div>
-            </div>
-        </div>
-        <div class="comment-content">${escapeHtml(comment.content)}</div>
-        <div class="comment-actions">
-            ${isOwner ? `
-                <button class="comment-action-btn comment-delete-btn"
-                    onclick="deleteComment('${comment.id}')">
-                    🗑️ Delete
-                </button>` : ''}
-        </div>`;
-
-    return card;
-}
-
-// Updated submitComment to add new comment at top
-async function submitComment() {
-    if (!currentUser) { openAuth(); return; }
-    if (!currentMovie) return;
-
-    const input = document.getElementById('commentInput');
-    const btn = document.querySelector('.comment-submit-btn');
-    const content = input.value.trim();
-
-    if (!content) { showToast('⚠️ Please write something first!'); return; }
-    if (content.length > 500) { showToast('⚠️ Comment too long!'); return; }
-
-    btn.disabled = true;
-    btn.textContent = 'Posting...';
-
-    try {
-        const username = currentUser.user_metadata?.username 
-            || currentUser.email.split('@')[0];
-
-        const { data, error } = await sb
-            .from('comments')
-            .insert({
-                user_id: currentUser.id,
-                username: username,
-                movie_imdb: currentMovie.imdb,
-                content: content
-            })
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        const list = document.getElementById('commentsList');
-        const noComments = list.querySelector('.no-comments');
-        if (noComments) noComments.remove();
-
-        // Add to TOP of list
-        const card = createCommentCard(data);
-        list.insertBefore(card, list.firstChild);
-
-        // Clear input
-        input.value = '';
-        document.getElementById('commentCharCount').textContent = '0/500';
-
-        // Scroll to top of comments to show new comment
-        list.scrollTop = 0;
-
-        showToast('💬 Comment posted!');
-
-    } catch (err) {
-        showToast('❌ Failed to post comment');
-        console.error(err);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'Post Comment';
-    }
-}
-
-// Updated deleteComment
-async function deleteComment(commentId) {
-    if (!currentUser) return;
-    try {
-        const { error } = await sb
-            .from('comments')
-            .delete()
-            .eq('id', commentId)
-            .eq('user_id', currentUser.id);
-
-        if (error) throw error;
-
-        const card = document.getElementById('comment-' + commentId);
-        if (card) card.remove();
-
-        const list = document.getElementById('commentsList');
-        // Only show "no comments" if list is completely empty (no cards, no load more button)
-        if (!list.querySelector('.comment-card') && !list.querySelector('.load-more-btn')) {
-            list.innerHTML = '<div class="no-comments">💬 No comments yet. Be the first!</div>';
-        }
-
-        showToast('🗑️ Comment deleted');
-
-    } catch (err) {
-        showToast('❌ Could not delete comment');
-        console.error(err);
-    }
-}
-
-// Keep all your other comment functions the same (updateCommentUI, formatTimeAgo, escapeHtml)
 function createCommentCard(comment) {
     const card     = document.createElement('div');
     card.className = 'comment-card';
     card.id        = 'comment-' + comment.id;
 
-    const initials = comment.username.slice(0, 2).toUpperCase();
-    const timeAgo  = formatTimeAgo(comment.created_at);
-    const isOwner  = currentUser && currentUser.id === comment.user_id;
+    const initials  = comment.username.slice(0, 2).toUpperCase();
+    const timeAgo   = formatTimeAgo(comment.created_at);
+    const isOwner   = currentUser && currentUser.id === comment.user_id;
+    // Generate a consistent colour from username
+    const colours   = ['#e23636','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4'];
+    const colourIdx = comment.username.charCodeAt(0) % colours.length;
+    const avatarBg  = colours[colourIdx];
 
     card.innerHTML = `
         <div class="comment-header">
             <div class="comment-user">
-                <div class="comment-avatar">${initials}</div>
+                <div class="comment-avatar" style="background:${avatarBg}">${initials}</div>
                 <div>
                     <div class="comment-username">${escapeHtml(comment.username)}</div>
                     <div class="comment-time">${timeAgo}</div>
@@ -1846,6 +1723,7 @@ function createCommentCard(comment) {
                     🗑️ Delete
                 </button>` : ''}
         </div>`;
+
     return card;
 }
 
@@ -1857,14 +1735,15 @@ async function submitComment() {
     const btn     = document.querySelector('.comment-submit-btn');
     const content = input.value.trim();
 
-    if (!content) { showToast('⚠️ Please write something first!'); return; }
-    if (content.length > 500) { showToast('⚠️ Comment too long!'); return; }
+    if (!content) { showToast('⚠️ Write something first!'); input.focus(); return; }
+    if (content.length > 500) { showToast('⚠️ Comment too long! Max 500 characters.'); return; }
 
     btn.disabled    = true;
-    btn.textContent = 'Posting...';
+    btn.textContent = '⏳ Posting...';
 
     try {
         const username = currentUser.user_metadata?.username || currentUser.email.split('@')[0];
+
         const { data, error } = await sb
             .from('comments')
             .insert({
@@ -1879,17 +1758,30 @@ async function submitComment() {
         if (error) throw error;
 
         const list = document.getElementById('commentsList');
+
+        // Remove empty state message if present
         const noComments = list.querySelector('.no-comments');
         if (noComments) noComments.remove();
-        list.insertBefore(createCommentCard(data), list.firstChild);
 
+        // Inject new comment at the very top with a highlight flash
+        const card = createCommentCard(data);
+        card.style.border = '1px solid var(--marvel-red)';
+        list.insertBefore(card, list.firstChild);
+        setTimeout(() => card.style.border = '', 2000);
+
+        // Reset form
         input.value = '';
         document.getElementById('commentCharCount').textContent = '0/500';
+        list.scrollTop = 0;
+
+        // Update offset so pagination stays correct
+        currentCommentOffset += 1;
+
         showToast('💬 Comment posted!');
 
     } catch (err) {
-        showToast('❌ Failed to post comment');
-        console.error(err);
+        showToast('❌ Failed to post. Try again!');
+        console.error('Submit comment error:', err);
     } finally {
         btn.disabled    = false;
         btn.textContent = 'Post Comment';
@@ -1898,6 +1790,10 @@ async function submitComment() {
 
 async function deleteComment(commentId) {
     if (!currentUser) return;
+
+    // Confirm before deleting
+    if (!confirm('Delete this comment?')) return;
+
     try {
         const { error } = await sb
             .from('comments')
@@ -1908,17 +1804,28 @@ async function deleteComment(commentId) {
         if (error) throw error;
 
         const card = document.getElementById('comment-' + commentId);
-        if (card) card.remove();
+        if (card) {
+            card.style.opacity  = '0';
+            card.style.transform = 'translateX(20px)';
+            card.style.transition = 'all 0.3s ease';
+            setTimeout(() => card.remove(), 300);
+        }
+
+        // Update offset
+        currentCommentOffset = Math.max(0, currentCommentOffset - 1);
 
         const list = document.getElementById('commentsList');
-        if (list && list.children.length === 0) {
-            list.innerHTML = '<div class="no-comments">💬 No comments yet. Be the first!</div>';
-        }
+        setTimeout(() => {
+            if (!list.querySelector('.comment-card') && !list.querySelector('.load-more-btn')) {
+                list.innerHTML = '<div class="no-comments">💬 No comments yet. Be the first hero to comment!</div>';
+            }
+        }, 350);
+
         showToast('🗑️ Comment deleted');
 
     } catch (err) {
         showToast('❌ Could not delete comment');
-        console.error(err);
+        console.error('Delete comment error:', err);
     }
 }
 
@@ -1937,10 +1844,10 @@ function updateCommentUI() {
 
 function formatTimeAgo(dateString) {
     const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
-    if (seconds < 60)    return 'just now';
-    if (seconds < 3600)  return Math.floor(seconds / 60)   + 'm ago';
-    if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
-    if (seconds < 604800)return Math.floor(seconds / 86400)+ 'd ago';
+    if (seconds < 60)     return 'just now';
+    if (seconds < 3600)   return Math.floor(seconds / 60)    + 'm ago';
+    if (seconds < 86400)  return Math.floor(seconds / 3600)  + 'h ago';
+    if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
     return new Date(dateString).toLocaleDateString();
 }
 
@@ -1964,7 +1871,9 @@ function updateNavForUser(user) {
                 <span class="user-name">${user.username.split(' ')[0]}</span>
                 <div class="user-dropdown">
                     <div class="dropdown-item">👤 ${user.username}</div>
-                    <div class="dropdown-item" onclick="showWatchlistToast()">❤️ Watchlist (${userWatchlist.length})</div>
+                    <div class="dropdown-item" onclick="showWatchlistToast()">
+                        ❤️ Watchlist (${userWatchlist.length})
+                    </div>
                     <div class="dropdown-item logout" onclick="logoutUser()">🚪 Logout</div>
                 </div>
             </div>`;
@@ -1980,7 +1889,9 @@ function updateNavForGuest() {
 
 function showWatchlistToast() {
     const count = userWatchlist.length;
-    showToast(count > 0 ? `❤️ You have ${count} movie(s) in your watchlist` : '📺 Your watchlist is empty');
+    showToast(count > 0
+        ? `❤️ You have ${count} movie(s) in your watchlist`
+        : '📺 Your watchlist is empty — add some!');
 }
 
 function updateModalButtons() {
@@ -2048,10 +1959,10 @@ function checkStrength() {
     const bar  = document.getElementById('strengthBar');
     const text = document.getElementById('strengthText');
     let s = 0;
-    if (val.length >= 8)           s++;
-    if (/[A-Z]/.test(val))         s++;
-    if (/[0-9]/.test(val))         s++;
-    if (/[^A-Za-z0-9]/.test(val)) s++;
+    if (val.length >= 8)            s++;
+    if (/[A-Z]/.test(val))          s++;
+    if (/[0-9]/.test(val))          s++;
+    if (/[^A-Za-z0-9]/.test(val))  s++;
     const levels = [
         { w: '0%',   c: 'transparent', l: '' },
         { w: '25%',  c: '#ff4444',     l: '⚠️ Weak' },
@@ -2065,9 +1976,9 @@ function checkStrength() {
     text.style.color     = levels[s].c;
 }
 
-
-//  MOVIE FUNCTIONS
-
+// ═══════════════════════════════════════════════════
+//  PARTICLES
+// ═══════════════════════════════════════════════════
 
 function createParticles() {
     const container = document.getElementById('particles');
@@ -2082,11 +1993,19 @@ function createParticles() {
     }
 }
 
+// ═══════════════════════════════════════════════════
+//  MOVIES GRID
+// ═══════════════════════════════════════════════════
+
 function renderMovies(list) {
     const grid = document.getElementById('moviesGrid');
     grid.innerHTML = '';
     if (list.length === 0) {
-        grid.innerHTML = `<div class="no-results" style="display:block"><h3>No Results Found</h3><p>Try a different search or phase filter.</p></div>`;
+        grid.innerHTML = `
+            <div class="no-results" style="display:block">
+                <h3>No Results Found</h3>
+                <p>Try a different search or phase filter.</p>
+            </div>`;
         return;
     }
     list.forEach(movie => {
@@ -2114,6 +2033,10 @@ function renderMovies(list) {
     });
 }
 
+// ═══════════════════════════════════════════════════
+//  FILTERS
+// ═══════════════════════════════════════════════════
+
 let currentPhase  = 'all';
 let currentSearch = '';
 
@@ -2131,7 +2054,9 @@ function searchMovies() {
 
 function applyFilters() {
     let filtered = movies;
-    if (currentPhase !== 'all') filtered = filtered.filter(m => m.phase === currentPhase);
+    if (currentPhase !== 'all') {
+        filtered = filtered.filter(m => m.phase === currentPhase);
+    }
     if (currentSearch) {
         filtered = filtered.filter(m =>
             m.title.toLowerCase().includes(currentSearch) ||
@@ -2142,16 +2067,21 @@ function applyFilters() {
     renderMovies(filtered);
 }
 
+// ═══════════════════════════════════════════════════
 //  OPEN MOVIE
-
+// ═══════════════════════════════════════════════════
 
 function openMovie(movie) {
+    // Stop any existing progress timer
     clearInterval(progressUpdateInterval);
     currentMovie = movie;
 
-    document.getElementById('modalPhase').textContent = 'Phase ' + movie.phase;
-    document.getElementById('modalTitle').textContent = movie.title;
-    document.getElementById('sidebarPoster').src      = movie.poster;
+    // ── Header ──
+    document.getElementById('modalPhase').textContent    = 'Phase ' + movie.phase;
+    document.getElementById('modalTitle').textContent    = movie.title;
+
+    // ── Sidebar ──
+    document.getElementById('sidebarPoster').src         = movie.poster;
     document.getElementById('sidebarRating').textContent = movie.rating + ' / 10';
     document.getElementById('sidebarDesc').textContent   = movie.desc;
 
@@ -2164,10 +2094,11 @@ function openMovie(movie) {
         <span class="meta-tag">${movie.duration}</span>
         ${movie.genre.split(', ').map(g => `<span class="meta-tag">${g}</span>`).join('')}`;
 
+    // ── Progress ──
     const savedItem     = userWatching.find(w => w.imdb === movie.imdb);
     const savedProgress = savedItem ? savedItem.progress : 0;
-    currentProgress   = savedProgress;
-    lastSavedProgress = savedProgress;
+    currentProgress     = savedProgress;
+    lastSavedProgress   = savedProgress;
     document.getElementById('progressSlider').value        = savedProgress;
     document.getElementById('progressPercent').textContent = savedProgress + '%';
 
@@ -2175,24 +2106,29 @@ function openMovie(movie) {
     watchStartTime = Date.now() - (savedProgress / 100) * totalMinutes * 60000;
     progressUpdateInterval = setInterval(tickProgress, 1000);
 
+    // ── iframe ──
     document.getElementById('movieFrame').src =
         `https://www.2embed.cc/embed/${movie.imdb}`;
 
+    // ── Buttons ──
     updateModalButtons();
 
+    // ── Recommended strip ──
     const strip = document.getElementById('featuredStrip');
     strip.innerHTML = '';
     movies
-        .filter(m => m.phase === movie.phase && m.title !== movie.title)
-        .slice(0, 8)
+        .filter(m => m.phase === movie.phase && m.imdb !== movie.imdb)
+        .slice(0, 10)
         .forEach(m => {
             const card = document.createElement('div');
             card.className = 'strip-card';
-            card.innerHTML = `<img src="${m.poster}" alt="${m.title}"><p>${m.title}</p>`;
+            card.title = m.title;
+            card.innerHTML = `<img src="${m.poster}" alt="${m.title}" loading="lazy"><p>${m.title}</p>`;
             card.addEventListener('click', () => openMovie(m));
             strip.appendChild(card);
         });
 
+    // ── Show modal ──
     document.getElementById('modal').classList.add('active');
     document.body.style.overflow = 'hidden';
 
@@ -2200,67 +2136,90 @@ function openMovie(movie) {
     updateCommentUI();
     loadComments(movie.imdb);
 
+    // Character counter
     const commentInput = document.getElementById('commentInput');
     if (commentInput) {
         commentInput.oninput = () => {
-            document.getElementById('commentCharCount').textContent =
-                commentInput.value.length + '/500';
+            const len = commentInput.value.length;
+            const counter = document.getElementById('commentCharCount');
+            counter.textContent = len + '/500';
+            counter.style.color = len > 450 ? '#ff4444' : '';
         };
     }
-} 
+}
 
+// ═══════════════════════════════════════════════════
 //  CLOSE MODAL
+// ═══════════════════════════════════════════════════
 
 function closeModal() {
     clearInterval(progressUpdateInterval);
+
+    // Auto-save progress on close
     if (currentMovie && currentUser && lastSavedProgress > 0) {
         _persistProgress(lastSavedProgress);
         renderContinueWatching();
     }
+
     document.getElementById('modal').classList.remove('active');
     document.getElementById('movieFrame').src = '';
     document.body.style.overflow = '';
     currentMovie = null;
 }
 
-
+// ═══════════════════════════════════════════════════
 //  TOAST
-
+// ═══════════════════════════════════════════════════
 
 function showToast(msg) {
     document.querySelectorAll('.toast').forEach(t => t.remove());
     const toast = document.createElement('div');
-    toast.className  = 'toast';
+    toast.className = 'toast';
     toast.style.cssText = `
-        position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
-        background:#1a1a1a; border:1px solid rgba(226,54,54,0.4);
-        color:white; padding:14px 24px; border-radius:30px;
-        font-size:14px; z-index:999999; font-weight:600;
-        box-shadow:0 5px 25px rgba(0,0,0,0.5); letter-spacing:0.5px; white-space:nowrap;
+        position: fixed; bottom: 30px; left: 50%;
+        transform: translateX(-50%) translateY(0);
+        background: #1a1a1a;
+        border: 1px solid rgba(226,54,54,0.4);
+        color: white; padding: 14px 24px; border-radius: 30px;
+        font-size: 14px; z-index: 999999; font-weight: 600;
+        box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+        letter-spacing: 0.5px; white-space: nowrap;
+        animation: toastIn 0.3s ease;
     `;
     toast.textContent = msg;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s, transform 0.3s';
+        toast.style.opacity    = '0';
+        toast.style.transform  = 'translateX(-50%) translateY(10px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 2700);
 }
 
-
+// ═══════════════════════════════════════════════════
 //  EVENT LISTENERS
+// ═══════════════════════════════════════════════════
 
 document.getElementById('modal').addEventListener('click', e => {
     if (e.target === document.getElementById('modal')) closeModal();
 });
+
 document.getElementById('authModal').addEventListener('click', e => {
     if (e.target === document.getElementById('authModal')) closeAuth();
 });
+
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeModal(); closeAuth(); }
 });
+
 document.addEventListener('DOMContentLoaded', () => {
     const p = document.getElementById('signupPassword');
     if (p) p.addEventListener('input', checkStrength);
 });
 
-
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
 
 window.addEventListener('load', () => {
     createParticles();
