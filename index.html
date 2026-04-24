@@ -236,6 +236,196 @@
             letter-spacing: 1px; text-transform: uppercase; transition: all 0.3s;
             box-shadow: 0 5px 25px rgba(226,54,54,0.4);
         }
+        /* ── COMMENTS ── */
+.comments-section {
+    margin-top: 25px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 20px;
+}
+
+.comment-form {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 16px;
+    display: none; /* hidden by default, shown when logged in */
+}
+
+.comment-form textarea {
+    width: 100%;
+    background: none;
+    border: none;
+    outline: none;
+    color: white;
+    font-size: 13px;
+    resize: none;
+    height: 70px;
+    font-family: 'Roboto', sans-serif;
+    line-height: 1.5;
+}
+
+.comment-form textarea::placeholder {
+    color: var(--text-secondary);
+}
+
+.comment-form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+#commentCharCount {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.comment-submit-btn {
+    background: var(--marvel-red);
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+}
+
+.comment-submit-btn:hover {
+    background: #ff4444;
+    transform: translateY(-1px);
+}
+
+.comment-submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.comment-login-prompt {
+    text-align: center;
+    padding: 12px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    display: none; /* toggled by JS */
+}
+
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.comments-list::-webkit-scrollbar { width: 3px; }
+.comments-list::-webkit-scrollbar-thumb { background: rgba(226,54,54,0.4); }
+
+.comments-loading {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 12px;
+    padding: 20px;
+}
+
+.comment-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 12px;
+    transition: border-color 0.2s;
+}
+
+.comment-card:hover {
+    border-color: rgba(226,54,54,0.2);
+}
+
+.comment-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.comment-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.comment-avatar {
+    width: 28px;
+    height: 28px;
+    background: var(--marvel-red);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.comment-username {
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+}
+
+.comment-time {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.comment-content {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.comment-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.comment-action-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 11px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.comment-action-btn:hover {
+    background: rgba(255,255,255,0.06);
+    color: white;
+}
+
+.comment-delete-btn:hover {
+    color: var(--marvel-red);
+}
+
+.no-comments {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 12px;
+    padding: 30px 0;
+}
         .btn-primary:hover { background: #ff4444; transform: translateY(-2px); box-shadow: 0 8px 35px rgba(226,54,54,0.6); }
         .btn-secondary {
             display: flex; align-items: center; gap: 10px;
@@ -816,6 +1006,33 @@
                 <div class="featured-strip" id="featuredStrip"></div>
             </div>
         </div>
+            <div class="comments-section">
+        <p class="sidebar-title">💬 COMMENTS</p>
+
+        <!-- Write a comment -->
+        <div class="comment-form" id="commentForm">
+            <textarea 
+                id="commentInput" 
+                placeholder="Share your thoughts about this movie..."
+                maxlength="500">
+            </textarea>
+            <div class="comment-form-footer">
+                <span id="commentCharCount">0/500</span>
+                <button class="comment-submit-btn" onclick="submitComment()">
+                    Post Comment
+                </button>
+            </div>
+        </div>
+
+        <!-- Login prompt if not logged in -->
+        <div class="comment-login-prompt" id="commentLoginPrompt">
+            <p>👤 <span onclick="openAuth()" style="color:var(--marvel-red);cursor:pointer;font-weight:700;">Login</span> to leave a comment</p>
+        </div>
+
+        <!-- Comments list -->
+        <div class="comments-list" id="commentsList">
+            <div class="comments-loading">Loading comments...</div>
+        </div>
     </div>
 </div>
 
@@ -992,6 +1209,7 @@ async function handleLogin(e) {
         btn.disabled = false;
         btn.textContent = 'Login';
     }
+    updateCommentUI();
 }
 
 async function logoutUser() {
@@ -1003,6 +1221,8 @@ async function logoutUser() {
     updateNavForGuest();
     hideContinueWatching();
     showToast('Logged out. See you, Hero! 👋');
+    updateCommentUI();
+
 }
 
 async function handleForgotPassword() {
@@ -1510,6 +1730,18 @@ function openMovie(movie) {
     // ── Show modal ──
     document.getElementById('modal').classList.add('active');
     document.body.style.overflow = 'hidden';
+
+    // Inside openMovie(), before the closing }
+updateCommentUI();
+loadComments(movie.imdb);
+
+// Also add the character counter listener
+const input = document.getElementById('commentInput');
+if (input) {
+    input.oninput = () => {
+        document.getElementById('commentCharCount').textContent = 
+            input.value.length + '/500';
+    };
 }
 
 // ═══════════════════════════════════════════════════
