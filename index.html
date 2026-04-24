@@ -1146,11 +1146,11 @@ const movies = [
 async function handleSignup(e) {
     e.preventDefault();
     const username = document.getElementById('signupName').value.trim();
-    const email = document.getElementById('signupEmail').value.trim();
+    const email    = document.getElementById('signupEmail').value.trim();
     const password = document.getElementById('signupPassword').value;
-    const confirm = document.getElementById('signupConfirm').value;
-    const errorEl = document.getElementById('signupError');
-    const btn = document.getElementById('signupBtn');
+    const confirm  = document.getElementById('signupConfirm').value;
+    const errorEl  = document.getElementById('signupError');
+    const btn      = document.getElementById('signupBtn');
 
     if (username.length < 2) { errorEl.textContent = '❌ Name must be at least 2 characters'; return; }
     if (!/\S+@\S+\.\S+/.test(email)) { errorEl.textContent = '❌ Invalid email'; return; }
@@ -1171,10 +1171,10 @@ async function handleSignup(e) {
         closeAuth();
         updateNavForUser({ username, email });
         showToast(`Welcome to Marvel Universe, ${username}! 🦸`);
-    } catch (error) {
-        errorEl.textContent = error.message.includes('already registered')
+    } catch (err) {
+        errorEl.textContent = err.message.includes('already registered')
             ? '❌ Email already registered'
-            : '❌ ' + error.message;
+            : '❌ ' + err.message;
         shakeForm('signupForm');
     } finally {
         btn.disabled = false;
@@ -1184,10 +1184,10 @@ async function handleSignup(e) {
 
 async function handleLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('loginEmail').value.trim();
+    const email    = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
-    const errorEl = document.getElementById('loginError');
-    const btn = document.getElementById('loginBtn');
+    const errorEl  = document.getElementById('loginError');
+    const btn      = document.getElementById('loginBtn');
 
     btn.disabled = true;
     btn.textContent = '⏳ Logging in...';
@@ -1202,14 +1202,14 @@ async function handleLogin(e) {
         closeAuth();
         updateNavForUser({ username, email });
         showToast(`Welcome back, ${username}! 🦸`);
-    } catch (error) {
+        updateCommentUI();
+    } catch (err) {
         errorEl.textContent = '❌ Wrong email or password';
         shakeForm('loginForm');
     } finally {
         btn.disabled = false;
         btn.textContent = 'Login';
     }
-    updateCommentUI();
 }
 
 async function logoutUser() {
@@ -1217,12 +1217,11 @@ async function logoutUser() {
     currentUser = null;
     userFavorites = [];
     userWatchlist = [];
-    userWatching = [];
+    userWatching  = [];
     updateNavForGuest();
     hideContinueWatching();
-    showToast('Logged out. See you, Hero! 👋');
     updateCommentUI();
-
+    showToast('Logged out. See you, Hero! 👋');
 }
 
 async function handleForgotPassword() {
@@ -1240,7 +1239,7 @@ async function handleForgotPassword() {
             document.getElementById('loginError').style.color = '';
             document.getElementById('loginError').textContent = '';
         }, 4000);
-    } catch (error) {
+    } catch (err) {
         document.getElementById('loginError').textContent = '❌ Email not found';
     }
 }
@@ -1263,11 +1262,11 @@ async function checkAuthState() {
 
 async function loadUserData() {
     if (!currentUser) return;
-    const key = 'marvel_' + currentUser.id;
+    const key  = 'marvel_' + currentUser.id;
     const saved = JSON.parse(localStorage.getItem(key) || '{}');
     userFavorites = saved.favorites || [];
     userWatchlist = saved.watchlist || [];
-    userWatching = saved.watching || [];
+    userWatching  = saved.watching  || [];
     renderContinueWatching();
 }
 
@@ -1277,7 +1276,7 @@ function saveUserData() {
     localStorage.setItem(key, JSON.stringify({
         favorites: userFavorites,
         watchlist: userWatchlist,
-        watching: userWatching
+        watching:  userWatching
     }));
 }
 
@@ -1294,7 +1293,7 @@ function toggleWatchlist() {
         showToast(`❤️ Added "${currentMovie.title}" to watchlist!`);
     } else {
         userWatchlist.splice(idx, 1);
-        showToast(`✅ Removed from watchlist`);
+        showToast('✅ Removed from watchlist');
     }
     saveUserData();
     updateModalButtons();
@@ -1313,40 +1312,33 @@ function toggleFavorite() {
         showToast(`⭐ Added "${currentMovie.title}" to favorites!`);
     } else {
         userFavorites.splice(idx, 1);
-        showToast(`✅ Removed from favorites`);
+        showToast('✅ Removed from favorites');
     }
     saveUserData();
     updateModalButtons();
 }
 
 // ═══════════════════════════════════════════════════
-//  PROGRESS — parses duration string into total minutes
+//  PROGRESS
 // ═══════════════════════════════════════════════════
 
 function parseDurationToMinutes(duration) {
-    // Handles formats like "2h 6m", "1h 52m", "3h 2m"
     const match = duration.match(/(?:(\d+)h)?\s*(?:(\d+)m)?/);
     const hours = parseInt(match[1] || 0);
-    const mins = parseInt(match[2] || 0);
+    const mins  = parseInt(match[2] || 0);
     return hours * 60 + mins;
 }
 
-// ─── Called every second by the timer ───
 function tickProgress() {
     if (!currentMovie || !watchStartTime) return;
-
     const totalMinutes = parseDurationToMinutes(currentMovie.duration);
     if (totalMinutes === 0) return;
 
-    // How many minutes have elapsed since we opened the player
     const elapsedMinutes = (Date.now() - watchStartTime) / 60000;
-
-    // Convert to percentage, capped at 100
     const newPercent = Math.min(Math.round((elapsedMinutes / totalMinutes) * 100), 100);
 
-    // Only move slider forward (don't reset if user dragged it ahead)
     if (newPercent > currentProgress) {
-        currentProgress = newPercent;
+        currentProgress  = newPercent;
         lastSavedProgress = newPercent;
         const slider = document.getElementById('progressSlider');
         const label  = document.getElementById('progressPercent');
@@ -1354,54 +1346,47 @@ function tickProgress() {
         if (label)  label.textContent = newPercent + '%';
     }
 
-    // Auto-save to localStorage every minute
-    if (newPercent % 5 === 0 && currentUser) {
+    if (newPercent % 5 === 0 && newPercent > 0 && currentUser) {
         _persistProgress(newPercent);
     }
 
-    // Auto-add to "Continue Watching" when finished
     if (newPercent >= 100) {
         clearInterval(progressUpdateInterval);
         _persistProgress(100);
         renderContinueWatching();
-        showToast('🎉 Movie complete! Added to continue watching.');
+        showToast('🎉 Movie complete!');
     }
 }
 
-// ─── Internal: write progress to userWatching array ───
 function _persistProgress(percent) {
     if (!currentMovie) return;
     const existing = userWatching.find(w => w.imdb === currentMovie.imdb);
     if (existing) {
-        existing.progress = percent;
+        existing.progress    = percent;
         existing.lastWatched = new Date().toISOString();
     } else {
         userWatching.unshift({
-            imdb: currentMovie.imdb,
-            title: currentMovie.title,
-            poster: currentMovie.poster,
-            progress: percent,
+            imdb:        currentMovie.imdb,
+            title:       currentMovie.title,
+            poster:      currentMovie.poster,
+            progress:    percent,
             lastWatched: new Date().toISOString()
         });
     }
     saveUserData();
 }
 
-// ─── Called when user drags the slider manually ───
 function updateProgress(val) {
     const percent = parseInt(val);
-    currentProgress = percent;
+    currentProgress   = percent;
     lastSavedProgress = percent;
     document.getElementById('progressPercent').textContent = percent + '%';
-
-    // Rebase the timer so auto-tick continues from this point
     if (currentMovie) {
         const totalMinutes = parseDurationToMinutes(currentMovie.duration);
         watchStartTime = Date.now() - (percent / 100) * totalMinutes * 60000;
     }
 }
 
-// ─── Save button ───
 function saveProgress() {
     if (!currentMovie) return;
     if (!currentUser) { showToast('⚠️ Please login to save progress!'); openAuth(); return; }
@@ -1416,7 +1401,7 @@ function saveProgress() {
 
 function renderContinueWatching() {
     const section = document.getElementById('continueSection');
-    const grid = document.getElementById('continueGrid');
+    const grid    = document.getElementById('continueGrid');
 
     if (!currentUser || userWatching.length === 0) {
         hideContinueWatching();
@@ -1429,7 +1414,6 @@ function renderContinueWatching() {
     userWatching.slice(0, 6).forEach(item => {
         const movie = movies.find(m => m.imdb === item.imdb);
         if (!movie) return;
-
         const card = document.createElement('div');
         card.className = 'continue-card';
         card.innerHTML = `
@@ -1473,12 +1457,175 @@ function clearAllWatching(e) {
 }
 
 // ═══════════════════════════════════════════════════
+//  COMMENTS
+// ═══════════════════════════════════════════════════
+
+async function loadComments(imdb) {
+    const list = document.getElementById('commentsList');
+    if (!list) return;
+    list.innerHTML = '<div class="comments-loading">Loading comments...</div>';
+
+    try {
+        const { data, error } = await sb
+            .from('comments')
+            .select('*')
+            .eq('movie_imdb', imdb)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data.length === 0) {
+            list.innerHTML = '<div class="no-comments">💬 No comments yet. Be the first!</div>';
+            return;
+        }
+
+        list.innerHTML = '';
+        data.forEach(comment => list.appendChild(createCommentCard(comment)));
+
+    } catch (err) {
+        list.innerHTML = '<div class="no-comments">❌ Could not load comments.</div>';
+        console.error(err);
+    }
+}
+
+function createCommentCard(comment) {
+    const card     = document.createElement('div');
+    card.className = 'comment-card';
+    card.id        = 'comment-' + comment.id;
+
+    const initials = comment.username.slice(0, 2).toUpperCase();
+    const timeAgo  = formatTimeAgo(comment.created_at);
+    const isOwner  = currentUser && currentUser.id === comment.user_id;
+
+    card.innerHTML = `
+        <div class="comment-header">
+            <div class="comment-user">
+                <div class="comment-avatar">${initials}</div>
+                <div>
+                    <div class="comment-username">${escapeHtml(comment.username)}</div>
+                    <div class="comment-time">${timeAgo}</div>
+                </div>
+            </div>
+        </div>
+        <div class="comment-content">${escapeHtml(comment.content)}</div>
+        <div class="comment-actions">
+            ${isOwner ? `
+                <button class="comment-action-btn comment-delete-btn"
+                    onclick="deleteComment('${comment.id}')">
+                    🗑️ Delete
+                </button>` : ''}
+        </div>`;
+    return card;
+}
+
+async function submitComment() {
+    if (!currentUser) { openAuth(); return; }
+    if (!currentMovie) return;
+
+    const input   = document.getElementById('commentInput');
+    const btn     = document.querySelector('.comment-submit-btn');
+    const content = input.value.trim();
+
+    if (!content) { showToast('⚠️ Please write something first!'); return; }
+    if (content.length > 500) { showToast('⚠️ Comment too long!'); return; }
+
+    btn.disabled    = true;
+    btn.textContent = 'Posting...';
+
+    try {
+        const username = currentUser.user_metadata?.username || currentUser.email.split('@')[0];
+        const { data, error } = await sb
+            .from('comments')
+            .insert({
+                user_id:    currentUser.id,
+                username:   username,
+                movie_imdb: currentMovie.imdb,
+                content:    content
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        const list = document.getElementById('commentsList');
+        const noComments = list.querySelector('.no-comments');
+        if (noComments) noComments.remove();
+        list.insertBefore(createCommentCard(data), list.firstChild);
+
+        input.value = '';
+        document.getElementById('commentCharCount').textContent = '0/500';
+        showToast('💬 Comment posted!');
+
+    } catch (err) {
+        showToast('❌ Failed to post comment');
+        console.error(err);
+    } finally {
+        btn.disabled    = false;
+        btn.textContent = 'Post Comment';
+    }
+}
+
+async function deleteComment(commentId) {
+    if (!currentUser) return;
+    try {
+        const { error } = await sb
+            .from('comments')
+            .delete()
+            .eq('id', commentId)
+            .eq('user_id', currentUser.id);
+
+        if (error) throw error;
+
+        const card = document.getElementById('comment-' + commentId);
+        if (card) card.remove();
+
+        const list = document.getElementById('commentsList');
+        if (list && list.children.length === 0) {
+            list.innerHTML = '<div class="no-comments">💬 No comments yet. Be the first!</div>';
+        }
+        showToast('🗑️ Comment deleted');
+
+    } catch (err) {
+        showToast('❌ Could not delete comment');
+        console.error(err);
+    }
+}
+
+function updateCommentUI() {
+    const form   = document.getElementById('commentForm');
+    const prompt = document.getElementById('commentLoginPrompt');
+    if (!form || !prompt) return;
+    if (currentUser) {
+        form.style.display   = 'block';
+        prompt.style.display = 'none';
+    } else {
+        form.style.display   = 'none';
+        prompt.style.display = 'block';
+    }
+}
+
+function formatTimeAgo(dateString) {
+    const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+    if (seconds < 60)    return 'just now';
+    if (seconds < 3600)  return Math.floor(seconds / 60)   + 'm ago';
+    if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+    if (seconds < 604800)return Math.floor(seconds / 86400)+ 'd ago';
+    return new Date(dateString).toLocaleDateString();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════════════
 //  NAV UI
 // ═══════════════════════════════════════════════════
 
 function updateNavForUser(user) {
     const initials = user.username.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    const authBtn = document.getElementById('authBtn');
+    const authBtn  = document.getElementById('authBtn');
     if (authBtn) {
         authBtn.outerHTML = `
             <div class="nav-user" id="navUser">
@@ -1532,7 +1679,7 @@ function openAuth() {
 
 function closeAuth() {
     document.getElementById('authModal').classList.remove('active');
-    document.getElementById('loginError').textContent = '';
+    document.getElementById('loginError').textContent  = '';
     document.getElementById('signupError').textContent = '';
     document.body.style.overflow = '';
 }
@@ -1549,13 +1696,13 @@ function switchTab(tab) {
         lf.style.display = 'none'; sf.style.display = 'block';
         st.classList.add('active'); lt.classList.remove('active');
     }
-    document.getElementById('loginError').textContent = '';
+    document.getElementById('loginError').textContent  = '';
     document.getElementById('signupError').textContent = '';
 }
 
 function togglePassword(id) {
     const input = document.getElementById(id);
-    input.type = input.type === 'password' ? 'text' : 'password';
+    input.type  = input.type === 'password' ? 'text' : 'password';
 }
 
 function shakeForm(formId) {
@@ -1566,40 +1713,40 @@ function shakeForm(formId) {
 }
 
 function checkStrength() {
-    const val = document.getElementById('signupPassword').value;
-    const bar = document.getElementById('strengthBar');
+    const val  = document.getElementById('signupPassword').value;
+    const bar  = document.getElementById('strengthBar');
     const text = document.getElementById('strengthText');
     let s = 0;
-    if (val.length >= 8) s++;
-    if (/[A-Z]/.test(val)) s++;
-    if (/[0-9]/.test(val)) s++;
+    if (val.length >= 8)           s++;
+    if (/[A-Z]/.test(val))         s++;
+    if (/[0-9]/.test(val))         s++;
     if (/[^A-Za-z0-9]/.test(val)) s++;
     const levels = [
-        { w: '0%', c: 'transparent', l: '' },
-        { w: '25%', c: '#ff4444', l: '⚠️ Weak' },
-        { w: '50%', c: '#ff9944', l: '🔶 Fair' },
-        { w: '75%', c: '#ffdd44', l: '🔷 Good' },
-        { w: '100%', c: '#44ff88', l: '✅ Strong' },
+        { w: '0%',   c: 'transparent', l: '' },
+        { w: '25%',  c: '#ff4444',     l: '⚠️ Weak' },
+        { w: '50%',  c: '#ff9944',     l: '🔶 Fair' },
+        { w: '75%',  c: '#ffdd44',     l: '🔷 Good' },
+        { w: '100%', c: '#44ff88',     l: '✅ Strong' },
     ];
-    bar.style.width = levels[s].w;
+    bar.style.width      = levels[s].w;
     bar.style.background = levels[s].c;
-    text.textContent = levels[s].l;
-    text.style.color = levels[s].c;
+    text.textContent     = levels[s].l;
+    text.style.color     = levels[s].c;
 }
 
-// ═══════════════════════════════════════════════════
+
 //  MOVIE FUNCTIONS
-// ═══════════════════════════════════════════════════
+
 
 function createParticles() {
     const container = document.getElementById('particles');
     for (let i = 0; i < 40; i++) {
         const p = document.createElement('div');
         p.classList.add('particle');
-        p.style.left = Math.random() * 100 + '%';
-        p.style.width = p.style.height = Math.random() * 3 + 1 + 'px';
+        p.style.left              = Math.random() * 100 + '%';
+        p.style.width             = p.style.height = Math.random() * 3 + 1 + 'px';
         p.style.animationDuration = Math.random() * 10 + 8 + 's';
-        p.style.animationDelay = Math.random() * 10 + 's';
+        p.style.animationDelay    = Math.random() * 10 + 's';
         container.appendChild(p);
     }
 }
@@ -1636,7 +1783,7 @@ function renderMovies(list) {
     });
 }
 
-let currentPhase = 'all';
+let currentPhase  = 'all';
 let currentSearch = '';
 
 function filterPhase(phase, btn) {
@@ -1664,56 +1811,44 @@ function applyFilters() {
     renderMovies(filtered);
 }
 
-// ═══════════════════════════════════════════════════
-//  OPEN MOVIE — clean, no nested functions
-// ═══════════════════════════════════════════════════
+//  OPEN MOVIE
+
 
 function openMovie(movie) {
-    // Stop any existing timer first
     clearInterval(progressUpdateInterval);
-
     currentMovie = movie;
 
-    // ── Populate header ──
     document.getElementById('modalPhase').textContent = 'Phase ' + movie.phase;
     document.getElementById('modalTitle').textContent = movie.title;
-
-    // ── Populate sidebar ──
-    document.getElementById('sidebarPoster').src = movie.poster;
+    document.getElementById('sidebarPoster').src      = movie.poster;
     document.getElementById('sidebarRating').textContent = movie.rating + ' / 10';
-    document.getElementById('sidebarDesc').textContent = movie.desc;
+    document.getElementById('sidebarDesc').textContent   = movie.desc;
 
     const fullStars = Math.round(parseFloat(movie.rating) / 2);
-    document.querySelector('.stars').textContent = '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars);
+    document.querySelector('.stars').textContent =
+        '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars);
 
     document.getElementById('sidebarMeta').innerHTML = `
         <span class="meta-tag">${movie.year}</span>
         <span class="meta-tag">${movie.duration}</span>
         ${movie.genre.split(', ').map(g => `<span class="meta-tag">${g}</span>`).join('')}`;
 
-    // ── Load saved progress ──
-    const savedItem = userWatching.find(w => w.imdb === movie.imdb);
+    const savedItem     = userWatching.find(w => w.imdb === movie.imdb);
     const savedProgress = savedItem ? savedItem.progress : 0;
-    currentProgress = savedProgress;
+    currentProgress   = savedProgress;
     lastSavedProgress = savedProgress;
-    document.getElementById('progressSlider').value = savedProgress;
+    document.getElementById('progressSlider').value        = savedProgress;
     document.getElementById('progressPercent').textContent = savedProgress + '%';
 
-    // ── Start timer, offset by already-watched percentage ──
     const totalMinutes = parseDurationToMinutes(movie.duration);
     watchStartTime = Date.now() - (savedProgress / 100) * totalMinutes * 60000;
-
-    // Tick every second for smooth progress
     progressUpdateInterval = setInterval(tickProgress, 1000);
 
-    // ── Load iframe ──
- document.getElementById('movieFrame').src =
-    `https://www.2embed.cc/embed/${movie.imdb}`;
+    document.getElementById('movieFrame').src =
+        `https://www.2embed.cc/embed/${movie.imdb}`;
 
-    // ── Watchlist / favorite buttons ──
     updateModalButtons();
 
-    // ── Related movies strip ──
     const strip = document.getElementById('featuredStrip');
     strip.innerHTML = '';
     movies
@@ -1727,51 +1862,44 @@ function openMovie(movie) {
             strip.appendChild(card);
         });
 
-    // ── Show modal ──
     document.getElementById('modal').classList.add('active');
     document.body.style.overflow = 'hidden';
 
-    // Inside openMovie(), before the closing }
-updateCommentUI();
-loadComments(movie.imdb);
+    // ── Comments ──
+    updateCommentUI();
+    loadComments(movie.imdb);
 
-// Also add the character counter listener
-const input = document.getElementById('commentInput');
-if (input) {
-    input.oninput = () => {
-        document.getElementById('commentCharCount').textContent = 
-            input.value.length + '/500';
-    };
-}
+    const commentInput = document.getElementById('commentInput');
+    if (commentInput) {
+        commentInput.oninput = () => {
+            document.getElementById('commentCharCount').textContent =
+                commentInput.value.length + '/500';
+        };
+    }
+} 
 
-// ═══════════════════════════════════════════════════
-//  CLOSE MODAL — auto-saves progress on close
-// ═══════════════════════════════════════════════════
+//  CLOSE MODAL
 
 function closeModal() {
-    // Stop the ticker
     clearInterval(progressUpdateInterval);
-
-    // Auto-save whatever progress we reached
     if (currentMovie && currentUser && lastSavedProgress > 0) {
         _persistProgress(lastSavedProgress);
         renderContinueWatching();
     }
-
     document.getElementById('modal').classList.remove('active');
     document.getElementById('movieFrame').src = '';
     document.body.style.overflow = '';
     currentMovie = null;
 }
 
-// ═══════════════════════════════════════════════════
+
 //  TOAST
-// ═══════════════════════════════════════════════════
+
 
 function showToast(msg) {
     document.querySelectorAll('.toast').forEach(t => t.remove());
     const toast = document.createElement('div');
-    toast.className = 'toast';
+    toast.className  = 'toast';
     toast.style.cssText = `
         position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
         background:#1a1a1a; border:1px solid rgba(226,54,54,0.4);
@@ -1784,9 +1912,8 @@ function showToast(msg) {
     setTimeout(() => toast.remove(), 3000);
 }
 
-// ═══════════════════════════════════════════════════
+
 //  EVENT LISTENERS
-// ═══════════════════════════════════════════════════
 
 document.getElementById('modal').addEventListener('click', e => {
     if (e.target === document.getElementById('modal')) closeModal();
@@ -1802,9 +1929,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (p) p.addEventListener('input', checkStrength);
 });
 
-// ═══════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════
+
 
 window.addEventListener('load', () => {
     createParticles();
