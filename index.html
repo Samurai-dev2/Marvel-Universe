@@ -389,17 +389,22 @@ nav {
 /* ═══════════════════════════════════════
    MODAL — completely rewritten
 ═══════════════════════════════════════ */
+/* Replace your entire modal section with this */
+
 .modal-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.95);
     z-index: 9999; display: none;
     align-items: center; justify-content: center;
     backdrop-filter: blur(10px);
+    padding: 10px; /* small breathing room */
 }
 .modal-overlay.active { display: flex; }
 
 .modal {
-    width: 95%; max-width: 1200px;
+    width: 100%;
+    max-width: 1400px;       /* wider */
+    height: calc(100vh - 20px); /* full height minus padding */
     background: var(--card-bg);
     border-radius: 16px;
     border: 1px solid rgba(226,54,54,0.3);
@@ -407,17 +412,17 @@ nav {
     animation: slideUp 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
     display: flex;
     flex-direction: column;
-    max-height: 95vh;
     overflow: hidden;
 }
 
-/* Header */
+/* Header — fixed height, never shrinks */
 .modal-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 22px;
+    padding: 14px 20px;
     border-bottom: 1px solid rgba(255,255,255,0.08);
     background: linear-gradient(to right, rgba(226,54,54,0.1), transparent);
     flex-shrink: 0;
+    height: 60px;
 }
 .modal-header-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .modal-actions { display: flex; gap: 8px; align-items: center; }
@@ -436,39 +441,257 @@ nav {
     justify-content: center; cursor: pointer; color: white;
     font-size: 16px; transition: all 0.3s; flex-shrink: 0;
 }
-.modal-close:hover { background: var(--marvel-red); border-color: var(--marvel-red); transform: rotate(90deg); }
+.modal-close:hover {
+    background: var(--marvel-red);
+    border-color: var(--marvel-red);
+    transform: rotate(90deg);
+}
 
-/* Body — LEFT: player+tracker | RIGHT: sidebar */
+/* Body — takes ALL remaining height */
 .modal-body {
     display: grid;
     grid-template-columns: 1fr 300px;
     flex: 1;
+    min-height: 0;            /* CRITICAL — allows children to shrink */
+    height: calc(100vh - 80px); /* full height minus header */
     overflow: hidden;
-    min-height: 0;
 }
 
-/* Left column */
+/* Left column — player fills entire left side */
 .modal-player {
     background: #000;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 16px 16px 12px;
+    align-items: stretch;     /* stretch iframe to full width */
+    justify-content: stretch;
+    padding: 0;               /* no padding so iframe fills everything */
     overflow: hidden;
-    gap: 10px;
+    height: 100%;
 }
 
-/* The iframe fills the left column nicely */
+/* Iframe fills ALL available space */
 .modal-player iframe {
     width: 100%;
     flex: 1;
     min-height: 0;
     border: none;
-    border-radius: 10px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    border-radius: 0;         /* no rounding so it touches the edges */
+    display: block;
 }
 
+/* Progress bar — thin, sits at very bottom of player */
+.progress-tracker {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,0,0,0.8);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 8px 16px;
+    height: 44px;
+}
+.progress-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    letter-spacing: 1px;
+}
+.progress-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.15);
+    outline: none;
+    cursor: pointer;
+}
+.progress-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--marvel-red);
+    cursor: pointer;
+    box-shadow: 0 0 6px rgba(226,54,54,0.5);
+    transition: transform 0.2s;
+}
+.progress-slider::-webkit-slider-thumb:hover { transform: scale(1.3); }
+.progress-percent {
+    font-size: 12px; color: var(--marvel-red);
+    font-weight: 700; min-width: 34px; text-align: right;
+}
+
+/* Right sidebar — scrollable */
+.modal-sidebar {
+    padding: 18px;
+    border-left: 1px solid rgba(255,255,255,0.08);
+    overflow-y: auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--card-bg);
+}
+.modal-sidebar::-webkit-scrollbar { width: 3px; }
+.modal-sidebar::-webkit-scrollbar-thumb { background: rgba(226,54,54,0.4); }
+
+.sidebar-poster {
+    width: 100%; border-radius: 8px;
+    margin-bottom: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-rating { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.stars { color: var(--gold); letter-spacing: 2px; }
+.sidebar-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.meta-tag {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 10px; color: var(--text-secondary); letter-spacing: 1px;
+}
+.sidebar-desc {
+    font-size: 12.5px; color: var(--text-secondary);
+    line-height: 1.7; margin-bottom: 16px;
+}
+.sidebar-title {
+    font-family: 'Bebas Neue', cursive; font-size: 12px;
+    letter-spacing: 3px; color: var(--text-secondary); margin-bottom: 8px;
+}
+.featured-strip {
+    display: flex; gap: 10px; overflow-x: auto;
+    padding-bottom: 8px; scrollbar-width: none; margin-bottom: 16px;
+}
+.featured-strip::-webkit-scrollbar { display: none; }
+.strip-card {
+    flex: 0 0 75px; background: rgba(255,255,255,0.04);
+    border-radius: 6px; overflow: hidden; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.06); transition: all 0.3s;
+}
+.strip-card:hover { border-color: rgba(226,54,54,0.5); transform: translateY(-3px); }
+.strip-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; }
+.strip-card p { padding: 4px 5px; font-size: 9px; text-align: center; color: var(--text-secondary); }
+
+/* Comments inside sidebar */
+.comments-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+.comment-form {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 12px;
+    display: none;
+    flex-shrink: 0;
+}
+.comment-form textarea {
+    width: 100%;
+    background: none; border: none; outline: none;
+    color: white; font-size: 12px; resize: none;
+    height: 55px;
+    font-family: 'Roboto', sans-serif; line-height: 1.5;
+}
+.comment-form textarea::placeholder { color: var(--text-secondary); }
+.comment-form-footer {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-top: 6px;
+}
+#commentCharCount { font-size: 10px; color: var(--text-secondary); }
+.comment-submit-btn {
+    background: var(--marvel-red); color: white;
+    border: none; padding: 5px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; cursor: pointer;
+    letter-spacing: 1px; transition: all 0.2s;
+}
+.comment-submit-btn:hover { background: #ff4444; transform: translateY(-1px); }
+.comment-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.comment-login-prompt {
+    text-align: center; padding: 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px; font-size: 12px;
+    color: var(--text-secondary); margin-bottom: 12px;
+    display: none; flex-shrink: 0;
+}
+.comments-list {
+    display: flex; flex-direction: column;
+    gap: 10px; overflow-y: auto;
+    flex: 1; padding-right: 2px;
+    min-height: 0;
+}
+.comments-list::-webkit-scrollbar { width: 3px; }
+.comments-list::-webkit-scrollbar-thumb { background: rgba(226,54,54,0.3); }
+.comments-loading, .no-comments {
+    text-align: center; color: var(--text-secondary);
+    font-size: 12px; padding: 20px 0;
+}
+.comment-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px; padding: 10px;
+    transition: border-color 0.2s; flex-shrink: 0;
+}
+.comment-card:hover { border-color: rgba(226,54,54,0.2); }
+.comment-header {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 6px;
+}
+.comment-user { display: flex; align-items: center; gap: 7px; }
+.comment-avatar {
+    width: 26px; height: 26px; background: var(--marvel-red);
+    border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;
+}
+.comment-username { font-size: 11px; font-weight: 700; color: white; }
+.comment-time { font-size: 10px; color: var(--text-secondary); }
+.comment-content {
+    font-size: 12px; color: var(--text-secondary);
+    line-height: 1.6; word-break: break-word;
+}
+.comment-actions { display: flex; gap: 6px; margin-top: 6px; }
+.comment-action-btn {
+    background: none; border: none;
+    color: var(--text-secondary); font-size: 10px;
+    cursor: pointer; padding: 2px 5px; border-radius: 4px;
+    transition: all 0.2s; display: flex; align-items: center; gap: 3px;
+}
+.comment-action-btn:hover { background: rgba(255,255,255,0.06); color: white; }
+.comment-delete-btn:hover { color: var(--marvel-red); }
+
+/* Responsive */
+@media (max-width: 900px) {
+    .modal {
+        height: 100vh;
+        border-radius: 0;
+        max-width: 100%;
+    }
+    .modal-overlay { padding: 0; }
+    .modal-body {
+        grid-template-columns: 1fr;
+        grid-template-rows: 50vh 1fr;
+        height: calc(100vh - 60px);
+        overflow-y: auto;
+    }
+    .modal-player {
+        height: 50vh;
+    }
+    .modal-sidebar {
+        border-left: none;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        height: auto;
+        overflow-y: visible;
+    }
+}
+@media (max-width: 600px) {
+    .modal-body {
+        grid-template-rows: 40vh 1fr;
+    }
+    .modal-player { height: 40vh; }
+}
 /* Progress bar sits below iframe */
 .progress-tracker {
     width: 100%;
