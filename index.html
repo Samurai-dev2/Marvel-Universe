@@ -2551,66 +2551,6 @@ async function loadMoreComments() {
     await loadComments(currentMovieImdb, true);
 }
 
-async function submitComment() {
-    if (!currentUser) { openAuth(); return; }
-    if (!currentMovie) return;
-
-    const input   = document.getElementById('commentInput');
-    const btn     = document.querySelector('.comment-submit-btn');
-    const content = input.value.trim();
-
-    if (!content) { showToast('⚠️ Write something first!'); input.focus(); return; }
-    if (content.length > 500) { showToast('⚠️ Comment too long! Max 500 characters.'); return; }
-
-    btn.disabled    = true;
-    btn.textContent = '⏳ Posting...';
-
-    try {
-        const username = currentUser.user_metadata?.username || currentUser.email.split('@')[0];
-
-        const { data, error } = await sb
-            .from('comments')
-            .insert({
-                user_id:    currentUser.id,
-                username:   username,
-                movie_imdb: currentMovie.imdb,
-                content:    content
-            })
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        const list = document.getElementById('commentsList');
-
-        // Remove empty state message if present
-        const noComments = list.querySelector('.no-comments');
-        if (noComments) noComments.remove();
-
-        // Inject new comment at the very top with a highlight flash
-        const card = createCommentCard(data);
-        card.style.border = '1px solid var(--marvel-red)';
-        list.insertBefore(card, list.firstChild);
-        setTimeout(() => card.style.border = '', 2000);
-
-        // Reset form
-        input.value = '';
-        document.getElementById('commentCharCount').textContent = '0/500';
-        list.scrollTop = 0;
-
-        // Update offset so pagination stays correct
-        currentCommentOffset += 1;
-
-        showToast('💬 Comment posted!');
-
-    } catch (err) {
-        showToast('❌ Failed to post. Try again!');
-        console.error('Submit comment error:', err);
-    } finally {
-        btn.disabled    = false;
-        btn.textContent = 'Post Comment';
-    }
-}
 
 async function deleteComment(commentId) {
     if (!currentUser) return;
