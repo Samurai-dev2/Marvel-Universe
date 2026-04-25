@@ -1101,7 +1101,120 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
 #profileAvatarDisplay:hover {
     transform: scale(1.1);
 }
+    /* ═══════════════════════════════════════
+   SOURCE SWITCHER
+═══════════════════════════════════════ */
+.source-switcher {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,0,0,0.9);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 8px 14px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 44px;
+}
+
+.source-label {
+    font-size: 10px;
+    color: var(--text-secondary);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    margin-right: 4px;
+}
+
+.source-btn {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--text-secondary);
+    padding: 4px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.25s;
+    white-space: nowrap;
+}
+
+.source-btn:hover {
+    background: rgba(255,255,255,0.14);
+    color: white;
+    border-color: rgba(255,255,255,0.25);
+}
+
+.source-btn.active {
+    background: var(--marvel-red);
+    border-color: var(--marvel-red);
+    color: white;
+    box-shadow: 0 0 12px rgba(226,54,54,0.45);
+}
+
+.source-btn.loading {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.source-status {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.source-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: pulse 1.5s infinite;
+}
+
+.source-dot.loading {
+    background: var(--gold);
+}
+    /* ═══════════════════════════════════════
+   LAZY LOAD FADE-IN
+═══════════════════════════════════════ */
+.movie-card {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.movie-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Stagger delay for each card */
+.movie-card:nth-child(1)  { transition-delay: 0.05s; }
+.movie-card:nth-child(2)  { transition-delay: 0.10s; }
+.movie-card:nth-child(3)  { transition-delay: 0.15s; }
+.movie-card:nth-child(4)  { transition-delay: 0.20s; }
+.movie-card:nth-child(5)  { transition-delay: 0.25s; }
+.movie-card:nth-child(6)  { transition-delay: 0.30s; }
+.movie-card:nth-child(7)  { transition-delay: 0.35s; }
+.movie-card:nth-child(8)  { transition-delay: 0.40s; }
+/* Lazy image blur-up effect */
+.lazy-img {
+    filter: blur(8px);
+    transition: filter 0.4s ease;
+    background: #1a1a1a;
+}
+
+.lazy-img.loaded {
+    filter: blur(0px);
+}
 </style>
+    
 </head>
 <body>
 
@@ -1344,15 +1457,42 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
             </div>
         </div>
         <div class="modal-body">
-            <div class="modal-player">
-<iframe 
-    id="movieFrame" 
-    src=""
-    style="width:100%; height:100%;"
-    frameborder="0"
-    referrerpolicy="no-referrer"
-    allowfullscreen>
-</iframe>
+         
+
+    <!-- SOURCE SWITCHER BAR -->
+    <div class="source-switcher" id="sourceSwitcher">
+        <span class="source-label">🎬 Source:</span>
+        <button class="source-btn active" id="src-vidsrc2"    onclick="switchSource('vidsrc2',    this)">VidSrc v2</button>
+        <button class="source-btn"        id="src-vidsrc3"    onclick="switchSource('vidsrc3',    this)">VidSrc v3</button>
+        <button class="source-btn"        id="src-vidsrcsbs"  onclick="switchSource('vidsrcsbs',  this)">VidSrc SBS</button>
+        <button class="source-btn"        id="src-vidlink"    onclick="switchSource('vidlink',    this)">VidLink</button>
+        <button class="source-btn"        id="src-autoembed"  onclick="switchSource('autoembed',  this)">AutoEmbed</button>
+        <button class="source-btn"        id="src-embedsu"    onclick="switchSource('embedsu',    this)">Embed.su</button>
+        <button class="source-btn"        id="src-2embed"     onclick="switchSource('2embed',     this)">2Embed</button>
+        <div class="source-status">
+            <div class="source-dot" id="sourceDot"></div>
+            <span id="sourceStatusText">Live</span>
+        </div>
+    </div>
+
+    <iframe
+        id="movieFrame"
+        src=""
+        style="width:100%; flex:1; min-height:0;"
+        frameborder="0"
+        referrerpolicy="no-referrer"
+        allowfullscreen
+        allow="autoplay; fullscreen; picture-in-picture">
+    </iframe>
+
+    <div class="progress-tracker">
+        <span class="progress-label">Progress:</span>
+        <input type="range" class="progress-slider" id="progressSlider" min="0" max="100" value="0" oninput="updateProgress(this.value)">
+        <span class="progress-percent" id="progressPercent">0%</span>
+        <button class="btn-favorite" onclick="saveProgress()" style="white-space:nowrap;padding:4px 10px">💾 Save</button>
+    </div>
+
+</div>
                 <div class="progress-tracker">
                     <span class="progress-label">Progress:</span>
                     <input type="range" class="progress-slider" id="progressSlider" min="0" max="100" value="0" oninput="updateProgress(this.value)">
@@ -1470,38 +1610,37 @@ let currentMovieImdb     = null;
 // ═══════════════════════════════════════════════════
 const movies = [
     { title: "Iron Man", year: 2008, phase: "1", imdb: "tt0371746", rating: "7.9", duration: "2h 6m", genre: "Action, Sci-Fi", poster: "https://m.media-amazon.com/images/M/MV5BMTczNTI2ODUwOF5BMl5BanBnXkFtZTcwMTU0NTIzMw@@._V1_SX300.jpg", desc: "After being held captive in an Afghan cave, billionaire engineer Tony Stark creates a unique weaponized suit of armor to fight evil." },
-    { title: "The Incredible Hulk", year: 2008, phase: "1", imdb: "tt0800080", rating: "6.7", duration: "1h 52m", genre: "Action, Sci-Fi", poster: "https://m.media-amazon.com/images/M/MV5BMTUyNzk3MjA1OF5BMl5BanBnXkFtZTcwMzA1Mjc2MQ@@._V1_SX300.jpg", desc: "Bruce Banner must find a cure for the monster he turns into whenever he loses his temper." },
+    { title: "The Incredible Hulk", year: 2008, phase: "1", imdb: "tt0800080", rating: "6.7", duration: "1h 52m", genre: "Action, Sci-Fi", poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYQAQsxMDsLnahO1HkzKOPGslq2Bz_tNXjjOLA7IxuFQicAhNzIuofEyOWbeE4piKYWuHqtA&s=10", desc: "Bruce Banner must find a cure for the monster he turns into whenever he loses his temper." },
     { title: "Iron Man 2", year: 2010, phase: "1", imdb: "tt1228705", rating: "7.0", duration: "2h 4m", genre: "Action, Sci-Fi", poster: "https://m.media-amazon.com/images/M/MV5BMTM0MDgwNjMyMl5BMl5BanBnXkFtZTcwNTg3NzAzMw@@._V1_SX300.jpg", desc: "Tony Stark must contend with his declining health and a vengeful mad scientist." },
     { title: "Thor", year: 2011, phase: "1", imdb: "tt0800369", rating: "7.0", duration: "1h 55m", genre: "Action, Fantasy", poster: "https://m.media-amazon.com/images/M/MV5BOGE4NzU1YTAtNzA3Mi00ZTA2LTg2YmYtMDJmMThiMjlkYjg2XkEyXkFqcGdeQXVyNTgzMDMzMTg@._V1_SX300.jpg", desc: "The powerful but arrogant god Thor is cast out of Asgard to live amongst humans." },
-    { title: "Captain America: The First Avenger", year: 2011, phase: "1", imdb: "tt0458339", rating: "6.9", duration: "2h 4m", genre: "Action, Adventure", poster: "https://m.media-amazon.com/images/M/MV5BNzE2MjkwOTYyNl5BMl5BanBnXkFtZTcwODkzOTc4NA@@._V1_SX300.jpg", desc: "Steve Rogers transforms into Captain America after taking a Super-Soldier Serum." },
-    { title: "The Avengers", year: 2012, phase: "1", imdb: "tt0848228", rating: "8.0", duration: "2h 23m", genre: "Action, Sci-Fi", poster: "https://m.media-amazon.com/images/M/MV5BNDYxNjQyMjAtNTdiOS00NGYwLWFmNTAtNThmYjU5ZGM2NTFkXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_SX300.jpg", desc: "Earth's mightiest heroes must come together to stop Loki and his alien army." },
+    { title: "Captain America: The First Avenger", year: 2011, phase: "1", imdb: "tt0458339", rating: "6.9", duration: "2h 4m", genre: "Action, Adventure", poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_Zvkfg2WDajJvlev56lJrq92UWj_qMOEdjDDqhIUSc-jh94KvDlFmjabhmg3-gTpjs8xRXg&s=10", desc: "Steve Rogers transforms into Captain America after taking a Super-Soldier Serum." },
+    { title: "The Avengers", year: 2012, phase: "1", imdb: "tt0848228", rating: "8.0", duration: "2h 23m", genre: "Action, Sci-Fi", poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQluFl3GfQDXohBaH-xG3GuRi8T4MDIQPRpCqUGLiE5tXdXbUO0hRFwnshvzg07igEgGg7i&s=10", desc: "Earth's mightiest heroes must come together to stop Loki and his alien army." },
     { title: "Iron Man 3", year: 2013, phase: "2", imdb: "tt1300854", rating: "7.1", duration: "2h 10m", genre: "Action, Adventure", poster: "https://m.media-amazon.com/images/M/MV5BMjE5MzcyNjk1M15BMl5BanBnXkFtZTcwMjQ4MjcxOQ@@._V1_SX300.jpg", desc: "Tony Stark starts an odyssey of rebuilding and retribution against the Mandarin." },
     { title: "Thor: The Dark World", year: 2013, phase: "2", imdb: "tt1981115", rating: "6.8", duration: "1h 52m", genre: "Action, Fantasy", poster: "https://m.media-amazon.com/images/M/MV5BMTQyNzAwOTUxOF5BMl5BanBnXkFtZTcwMTE0OTc5OQ@@._V1_SX300.jpg", desc: "Thor must protect Jane Foster before an ancient race destroys Earth." },
-    { title: "Captain America: The Winter Soldier", year: 2014, phase: "2", imdb: "tt1843866", rating: "7.7", duration: "2h 16m", genre: "Action, Thriller", poster: "https://m.media-amazon.com/images/M/MV5BMzA2NDkwODAwM15BMl5BanBnXkFtZTgwODk5MTgzMTE@._V1_SX300.jpg", desc: "Steve Rogers teams up with Natasha Romanoff to battle a new threat from his past." },
-    { title: "Guardians of the Galaxy", year: 2014, phase: "2", imdb: "tt2015381", rating: "8.0", duration: "2h 1m", genre: "Action, Comedy", poster: "https://m.media-amazon.com/images/M/MV5BMTAwMjU5OTgxNjZeQTJeQWpwZ15BbWU4MDUxNDYxNTMx._V1_SX300.jpg", desc: "Intergalactic criminals must pull together to stop a fanatical warrior." },
-    { title: "Avengers: Age of Ultron", year: 2015, phase: "2", imdb: "tt2395427", rating: "7.3", duration: "2h 21m", genre: "Action, Sci-Fi", poster: "https://m.media-amazon.com/images/M/MV5BMTM4OGJmNWMtOTM4Ni00NTE3LTg3MDItZmQxYjc4N2Y3NjY5XkEyXkFqcGdeQXVyODE5NzE3OTE@._V1_SX300.jpg", desc: "When Tony Stark tries to jump-start Ultron, things go horribly wrong." },
+    { title: "Guardians of the Galaxy", year: 2014, phase: "2", imdb: "tt2015381", rating: "8.0", duration: "2h 1m", genre: "Action, Comedy", poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS5LmvEQ3u221y-8Qv0Qj-e7ORLVYZoq1Y-CyRSIi0WvFIvtNTcvICk-cG0YErJxw7PqeJ3&s=10", desc: "Intergalactic criminals must pull together to stop a fanatical warrior." },
+    { title: "Avengers: Age of Ultron", year: 2015, phase: "2", imdb: "tt2395427", rating: "7.3", duration: "2h 21m", genre: "Action, Sci-Fi", poster: "https://static.wikia.nocookie.net/marvelcinematicuniverse/images/c/c7/Avengers_Age_Of_Ultron-poster1.jpg/revision/latest?cb=20150224202250", desc: "When Tony Stark tries to jump-start Ultron, things go horribly wrong." },
     { title: "Ant-Man", year: 2015, phase: "2", imdb: "tt0478970", rating: "7.3", duration: "1h 57m", genre: "Action, Comedy", poster: "https://m.media-amazon.com/images/M/MV5BMjM2NTQ5Mzc2M15BMl5BanBnXkFtZTgwNTcxMDI2NTE@._V1_SX300.jpg", desc: "Scott Lang must embrace his inner hero as the Ant-Man." },
     { title: "Captain America: Civil War", year: 2016, phase: "3", imdb: "tt3498820", rating: "7.8", duration: "2h 27m", genre: "Action, Sci-Fi", poster: "https://m.media-amazon.com/images/M/MV5BMjQ0MTgyNjAxMV5BMl5BanBnXkFtZTgwNjUzMDkyODE@._V1_SX300.jpg", desc: "Political involvement causes a rift between Captain America and Iron Man." },
     { title: "Doctor Strange", year: 2016, phase: "3", imdb: "tt1211837", rating: "7.5", duration: "1h 55m", genre: "Action, Fantasy", poster: "https://m.media-amazon.com/images/M/MV5BNjgwNzAzNjk1Nl5BMl5BanBnXkFtZTgwMzQ2NjI1OTE@._V1_SX300.jpg", desc: "A former neurosurgeon is drawn into the world of the mystic arts." },
     { title: "Guardians of the Galaxy Vol. 2", year: 2017, phase: "3", imdb: "tt3896198", rating: "7.6", duration: "2h 16m", genre: "Action, Comedy", poster: "https://m.media-amazon.com/images/M/MV5BNjM0NTc0NzItM2FlYS00YzEwLWE0YmUtNTA2ZWIzODc2OTgxXkEyXkFqcGdeQXVyNTgwNzIyNzg@._V1_SX300.jpg", desc: "The Guardians deal with family issues while Star-Lord encounters his father." },
     { title: "Spider-Man: Homecoming", year: 2017, phase: "3", imdb: "tt2250912", rating: "7.4", duration: "2h 13m", genre: "Action, Adventure", poster: "https://m.media-amazon.com/images/M/MV5BNTk4ODQ1MzgzNl5BMl5BanBnXkFtZTgwMTMyMzM4MTI@._V1_SX300.jpg", desc: "Peter Parker balances high school life while secretly saving the world." },
-    { title: "Thor: Ragnarok", year: 2017, phase: "3", imdb: "tt3501632", rating: "7.9", duration: "2h 10m", genre: "Action, Comedy", poster: "https://m.media-amazon.com/images/M/MV5BMjMyNDkzMzI1OF5BMl5BanBnXkFtZTgwODcxOTg0MjI@._V1_SX300.jpg", desc: "Thor must race to stop Ragnarök, the destruction of his world." },
+    { title: "Thor: Ragnarok", year: 2017, phase: "3", imdb: "tt3501632", rating: "7.9", duration: "2h 10m", genre: "Action, Comedy", poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcReCMlKbpqsAfxj-E797wdboaNM6ihmp86wfnL_bjVnI8NE-Xvr8h_zUtykA9hi6HtjyS1Z&s=10", desc: "Thor must race to stop Ragnarök, the destruction of his world." },
     { title: "Black Panther", year: 2018, phase: "3", imdb: "tt1825683", rating: "7.3", duration: "2h 14m", genre: "Action, Adventure", poster: "https://m.media-amazon.com/images/M/MV5BMTg1MTY2MjYzNV5BMl5BanBnXkFtZTgwMTc4NTMwNDI@._V1_SX300.jpg", desc: "T'Challa must step forward to lead Wakanda into a new future." },
-    { title: "Avengers: Infinity War", year: 2018, phase: "3", imdb: "tt4154756", rating: "8.4", duration: "2h 29m", genre: "Action, Sci-Fi", poster: "https://m.media-amazon.com/images/M/MV5BMjMxNjY2MDU1OV5BMl5BanBnXkFtZTgwNjIyMDk2MDE@._V1_SX300.jpg", desc: "The Avengers must sacrifice all to defeat the powerful Thanos." },
-    { title: "Ant-Man and the Wasp", year: 2018, phase: "3", imdb: "tt5095030", rating: "7.0", duration: "1h 58m", genre: "Action, Comedy", poster: "https://m.media-amazon.com/images/M/MV5BYjk3OGZkNDgtN2MxOS00ZTliLTg5NWEtMTRiOTgzNjM5ZWZlXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg", desc: "Scott Lang and Hope Van Dyne face an urgent new mission." },
-    { title: "Captain Marvel", year: 2019, phase: "3", imdb: "tt4154664", rating: "6.8", duration: "2h 4m", genre: "Action, Sci-Fi", poster: "https://m.media-amazon.com/images/M/MV5BMTE4NTgyODItZmNjNS00YTkwLTkxOTItMTI4N2RmNjZmMTI4XkEyXkFqcGdeQXVyODM2ODM0NDk@._V1_SX300.jpg", desc: "Carol Danvers becomes one of the universe's most powerful heroes." },
+    { title: "Avengers: Infinity War", year: 2018, phase: "3", imdb: "tt4154756", rating: "8.4", duration: "2h 29m", genre: "Action, Sci-Fi", poster: "https://m.media-amazon.com/images/M/MV5BMjMxNjY2MDU1OV5BMl5BanBnXkFtZTgwNzY1MTUwNTM@._V1_FMjpg_UX1000_.jpg", desc: "The Avengers must sacrifice all to defeat the powerful Thanos." },
+    { title: "Ant-Man and the Wasp", year: 2018, phase: "3", imdb: "tt5095030", rating: "7.0", duration: "1h 58m", genre: "Action, Comedy", poster: "https://m.media-amazon.com/images/M/MV5BODVkY2ZmZTAtYzFhMi00YzZlLWE2YWMtMDBiYjY2OTU4ZWM0XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg", desc: "Scott Lang and Hope Van Dyne face an urgent new mission." },
+    { title: "Captain Marvel", year: 2019, phase: "3", imdb: "tt4154664", rating: "6.8", duration: "2h 4m", genre: "Action, Sci-Fi", poster: "https://m.media-amazon.com/images/M/MV5BZDI1NGU2ODAtNzBiNy00MWY5LWIyMGEtZjUxZjUwZmZiNjBlXkEyXkFqcGc@._V1_.jpg", desc: "Carol Danvers becomes one of the universe's most powerful heroes." },
     { title: "Avengers: Endgame", year: 2019, phase: "3", imdb: "tt4154796", rating: "8.4", duration: "3h 2m", genre: "Action, Drama", poster: "https://m.media-amazon.com/images/M/MV5BMTc5MDE2ODcwNV5BMl5BanBnXkFtZTgwMzI2NzQ2NzM@._V1_SX300.jpg", desc: "The Avengers assemble once more to reverse Thanos' actions." },
-    { title: "Spider-Man: Far From Home", year: 2019, phase: "3", imdb: "tt6320628", rating: "7.4", duration: "2h 9m", genre: "Action, Adventure", poster: "https://m.media-amazon.com/images/M/MV5AAYNGQ1ODNiMDItZGY4Yy00YWZkLWFiM2ItZTliZGEwNGRiMGJjXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg", desc: "Spider-Man must step up to take on new threats after Endgame." },
-    { title: "Black Widow", year: 2021, phase: "4", imdb: "tt3480822", rating: "6.7", duration: "2h 14m", genre: "Action, Thriller", poster: "https://m.media-amazon.com/images/M/MV5BNjRmNDI5MjMtMmFhZi00YzcwLWI4ZGItMGI2MjI5N2MxNmYyXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg", desc: "Natasha confronts a dangerous conspiracy tied to her past." },
-    { title: "Shang-Chi and the Legend of the Ten Rings", year: 2021, phase: "4", imdb: "tt9376612", rating: "7.4", duration: "2h 12m", genre: "Action, Fantasy", poster: "https://m.media-amazon.com/images/M/MV5BNTliYjlkNDQtMjFlMS00NjgxLWFmNWMtNmEzMDgwMGE0ZGVlXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg", desc: "Shang-Chi is drawn into the Ten Rings organization." },
+    { title: "Spider-Man: Far From Home", year: 2019, phase: "3", imdb: "tt6320628", rating: "7.4", duration: "2h 9m", genre: "Action, Adventure", poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8FxjaDWguGUo7hf9ACzNOkXxprKIKA71GvSsqDUTbeTljBkigg1mMORFxaUAfPYpzL0pWnQ&s=10", desc: "Spider-Man must step up to take on new threats after Endgame." },
+    { title: "Black Widow", year: 2021, phase: "4", imdb: "tt3480822", rating: "6.7", duration: "2h 14m", genre: "Action, Thriller", poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTm2xO4-eLapPIPF0eh_VZti4lcPCqqIy8JklR0anBAMEH0eEH4YFer28_PFjZG0hICRyrtODnlR1mhNltqwGp2zhqzbWnsMetAQaI79cA&s=10", desc: "Natasha confronts a dangerous conspiracy tied to her past." },
+    { title: "Shang-Chi and the Legend of the Ten Rings", year: 2021, phase: "4", imdb: "tt9376612", rating: "7.4", duration: "2h 12m", genre: "Action, Fantasy", poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYygDJfDbxA1QxiZEYfwMMBy9XYV2hkVRVq3ORFplWQpsBNXzCo_7a8kTqaYEdbaR3J3xDv0TM-mRjT-XtiY46Jt0jhxV4NIysomJ5OQ&s=10", desc: "Shang-Chi is drawn into the Ten Rings organization." },
     { title: "Eternals", year: 2021, phase: "4", imdb: "tt9032400", rating: "6.3", duration: "2h 37m", genre: "Action, Sci-Fi", poster: "https://m.media-amazon.com/images/M/MV5BMTExZmVjY2ItYTAzYi00MDdlLWFlOWItNTJhMDRjMzQ5ZGY0XkEyXkFqcGdeQXVyODIyOTEyMzY@._V1_SX300.jpg", desc: "Immortal beings who lived on Earth and shaped its history." },
     { title: "Spider-Man: No Way Home", year: 2021, phase: "4", imdb: "tt10872600", rating: "8.2", duration: "2h 28m", genre: "Action, Adventure", poster: "https://m.media-amazon.com/images/M/MV5BZWMyYzFjYTYtNTRjYi00OGExLWE2YzgtOGRmYjAxZTU3NzBiXkEyXkFqcGdeQXVyMzQ0MzA0NTM@._V1_SX300.jpg", desc: "A spell goes wrong and dangerous foes from other worlds appear." },
     { title: "Doctor Strange in the Multiverse of Madness", year: 2022, phase: "4", imdb: "tt9419884", rating: "6.9", duration: "2h 6m", genre: "Action, Horror", poster: "https://m.media-amazon.com/images/M/MV5BNWM0ZGJlMzMtZmYwMi00NzI3LTgzMzMtNjMzNjliNDRmZmFlXkEyXkFqcGdeQXVyMTM1MTE1NDMx._V1_SX300.jpg", desc: "Doctor Strange traverses the multiverse to face a powerful adversary." },
-    { title: "Thor: Love and Thunder", year: 2022, phase: "4", imdb: "tt10089980", rating: "6.3", duration: "1h 59m", genre: "Action, Comedy", poster: "https://m.media-amazon.com/images/M/MV5BMmMxYTM4ZDktYjI1Zi00ODg1LWI1NWQtMDExZTY3YWNkNDY2XkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg", desc: "Thor fights Gorr the God Butcher who intends to make gods extinct." },
+    { title: "Thor: Love and Thunder", year: 2022, phase: "4", imdb: "tt10089980", rating: "6.3", duration: "1h 59m", genre: "Action, Comedy", poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSRApG8cO0RRHGerO3XaZTq7fMff0CtD-anm0EB6V_sv6KJqDregPxr1s87BubCq6n6v5tBYVWUP_MKCINYxhXaRQIxf4tlW8EiDQ-L_0k&s=10", desc: "Thor fights Gorr the God Butcher who intends to make gods extinct." },
     { title: "Black Panther: Wakanda Forever", year: 2022, phase: "4", imdb: "tt9114286", rating: "6.7", duration: "2h 41m", genre: "Action, Drama", poster: "https://m.media-amazon.com/images/M/MV5BNTM4NjIxNmEtYWE5NS00NDczLTkyNWQtYThhNmQyZGQzMjM0XkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_SX300.jpg", desc: "Wakanda fights to protect their home while mourning King T'Challa." },
-    { title: "Ant-Man and the Wasp: Quantumania", year: 2023, phase: "5", imdb: "tt10954600", rating: "6.0", duration: "2h 4m", genre: "Action, Sci-Fi", poster: "https://m.media-amazon.com/images/M/MV5BODZiNjhjZmQtMmIwYS00YzhiLWI0YjEtMDYyMTYzMzUzNzFlXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg", desc: "Scott Lang and Hope Van Dyne venture into the Quantum Realm." },
+    { title: "Ant-Man and the Wasp: Quantumania", year: 2023, phase: "5", imdb: "tt10954600", rating: "6.0", duration: "2h 4m", genre: "Action, Sci-Fi", poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1J0hVSdEvnsv6tOxan4d9CBgVfJ9CCSGf_fXNrPWPmjyuJjKJvZQ2KwlJB9NC7prnc7kheN46rvdr8-K9Fj8VuyupDNkFECksq2FrFA&s=10", desc: "Scott Lang and Hope Van Dyne venture into the Quantum Realm." },
     { title: "Guardians of the Galaxy Vol. 3", year: 2023, phase: "5", imdb: "tt6791350", rating: "7.9", duration: "2h 30m", genre: "Action, Comedy", poster: "https://m.media-amazon.com/images/M/MV5BMDgxOTdjMzYtZGQxMS00ZTAzLWI4Y2UtMTQzN2VlYjYyZWRiXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg", desc: "Peter Quill rallies his team after the loss of Gamora." },
-    { title: "The Marvels", year: 2023, phase: "5", imdb: "tt10676048", rating: "5.5", duration: "1h 45m", genre: "Action, Sci-Fi", poster: "https://m.media-amazon.com/images/M/MV5BM2U2YWU5NWMtOGI2Ni00OGQ4LWI2MWEtNWYwNTNiMTVkMzVmXkEyXkFqcGdeQXVyMDM2NDM2MQ@@._V1_SX300.jpg", desc: "Carol Danvers, Kamala Khan and Monica Rambeau swap places when they use their powers." }
+    { title: "The Marvels", year: 2023, phase: "5", imdb: "tt10676048", rating: "5.5", duration: "1h 45m", genre: "Action, Sci-Fi", poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRr2CHFXhorQkI9wP5KMf290fdqX7eRnl95P_BddZBIEuCqOAI7FYUnILfgo_ovnCK4ppeQyA&s=10", desc: "Carol Danvers, Kamala Khan and Monica Rambeau swap places when they use their powers." }
 ];
 
 // ═══════════════════════════════════════════════════
@@ -1908,6 +2047,37 @@ async function handleDeleteAccount() {
         showToast('❌ Error deleting account: ' + err.message);
         console.error('Delete account error:', err);
     }
+}
+    // ═══════════════════════════════════════════════════
+//  BLUR-UP IMAGE LAZY LOADER
+// ═══════════════════════════════════════════════════
+
+const imageObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+
+        const img = entry.target;
+        const realSrc = img.dataset.src;
+        if (!realSrc) return;
+
+        // Swap in the real image
+        const tempImg = new Image();
+        tempImg.onload = () => {
+            img.src = realSrc;
+            img.classList.add('loaded');
+        };
+        tempImg.src = realSrc;
+
+        imageObserver.unobserve(img);
+    });
+}, {
+    rootMargin: '200px 0px' // Load images 200px before they enter view
+});
+
+function observeImages() {
+    document.querySelectorAll('img.lazy-img').forEach(img => {
+        imageObserver.observe(img);
+    });
 }
     // ═══════════════════════════════════════════════════
 //  LIKE/DISLIKE SYSTEM
@@ -2791,7 +2961,12 @@ function renderMovies(list) {
         card.className = 'movie-card';
         card.innerHTML = `
             <div class="movie-poster">
-                <img src="${movie.poster}" alt="${movie.title}" loading="lazy">
+               <img 
+            src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+            data-src="${movie.poster}" 
+            alt="${movie.title}" 
+            class="lazy-img"
+            loading="lazy">
                 <span class="movie-phase-badge">Phase ${movie.phase}</span>
                 <span class="movie-rating">⭐ ${movie.rating}</span>
                 <div class="movie-overlay">
@@ -2808,7 +2983,10 @@ function renderMovies(list) {
             </div>`;
         card.addEventListener('click', () => openMovie(movie));
         grid.appendChild(card);
+        
     });
+    observeCards();
+     observeImages();
 }
 
 // ═══════════════════════════════════════════════════
@@ -2885,8 +3063,11 @@ function openMovie(movie) {
     progressUpdateInterval = setInterval(tickProgress, 1000);
 
     // ── iframe ──
-  document.getElementById('movieFrame').src =
-    `https://www.2embed.online/embed/movie/${movie.imdb}`;
+// Reset to default source and load
+currentSource = 'vidsrc2';
+document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('active'));
+document.getElementById('src-vidsrc2').classList.add('active');
+loadSource(movie.imdb, currentSource);
 
     // ── Buttons ──
     updateModalButtons();
@@ -3011,6 +3192,157 @@ window.addEventListener('load', () => {
     checkAuthState();
     setTimeout(() => document.getElementById('loader').classList.add('hidden'), 1600);
 });
+    // ═══════════════════════════════════════════════════
+//  MULTI-SOURCE PLAYER SYSTEM
+// ═══════════════════════════════════════════════════
+
+let currentSource = 'vidsrc2';
+
+/**
+ * Maps a source key + imdb ID to an embed URL.
+ * All sources accept IMDb IDs (tt-prefixed).
+ * vidsrc.cc fires postMessage events for real progress tracking.
+ */
+function getSourceUrl(imdb, source) {
+    const encodedImdb = encodeURIComponent(imdb);
+    const sources = {
+        // VidSrc v2 — clean player, IMDb support
+        'vidsrc2':   `https://vidsrc.cc/v2/embed/movie/${imdb}`,
+
+        // VidSrc v3 — alternate server, sometimes has sources v2 lacks
+        'vidsrc3':   `https://vidsrc.cc/v3/embed/movie/${imdb}`,
+
+        // VidSrc SBS — supports start timestamp & subtitle params
+        'vidsrcsbs': `https://vidsrc.sbs/embed/movie?id=${imdb}&autoplay=1`,
+
+        // VidLink Pro — clean no-ad-redirect UI
+        'vidlink':   `https://vidlink.pro/movie/${imdb}?autoplay=true&title=true`,
+
+        // AutoEmbed — multi-server, IMDb support
+        'autoembed': `https://autoembed.cc/movie/imdb/${imdb}`,
+
+        // Embed.su — clean player
+        'embedsu':   `https://embed.su/embed/movie/${imdb}`,
+
+        // 2Embed — your original fallback
+        '2embed':    `https://www.2embed.online/embed/movie/${imdb}`,
+    };
+    return sources[source] || sources['vidsrc2'];
+}
+
+function switchSource(sourceKey, btnEl) {
+    if (!currentMovie) return;
+    currentSource = sourceKey;
+
+    // Update button states
+    document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+
+    // Show loading state
+    const dot        = document.getElementById('sourceDot');
+    const statusText = document.getElementById('sourceStatusText');
+    dot.classList.add('loading');
+    statusText.textContent = 'Loading...';
+
+    // Small delay so the UI updates before the iframe reloads
+    const frame = document.getElementById('movieFrame');
+    frame.src   = '';
+
+    setTimeout(() => {
+        loadSource(currentMovie.imdb, sourceKey);
+    }, 120);
+}
+
+function loadSource(imdb, sourceKey) {
+    const frame      = document.getElementById('movieFrame');
+    const dot        = document.getElementById('sourceDot');
+    const statusText = document.getElementById('sourceStatusText');
+
+    dot.classList.add('loading');
+    statusText.textContent = 'Loading...';
+
+    frame.src = getSourceUrl(imdb, sourceKey);
+
+    // Mark as live once iframe fires load
+    frame.onload = () => {
+        dot.classList.remove('loading');
+        statusText.textContent = 'Live';
+    };
+
+    // Fallback if onload never fires (some iframes block it)
+    setTimeout(() => {
+        dot.classList.remove('loading');
+        statusText.textContent = 'Live';
+    }, 4000);
+}
+
+// ── Listen to vidsrc.cc postMessage for REAL progress tracking ──
+// vidsrc.cc fires { type:"PLAYER_EVENT", data:{ event, currentTime, duration } }
+window.addEventListener('message', (e) => {
+    // Only trust messages from known player origins
+    const trustedOrigins = [
+        'https://vidsrc.cc',
+        'https://vidsrc.sbs',
+        'https://vidlink.pro',
+        'https://autoembed.cc',
+        'https://embed.su',
+    ];
+    if (!trustedOrigins.includes(e.origin)) return;
+    if (!e.data || e.data.type !== 'PLAYER_EVENT') return;
+
+    const { event: evtType, currentTime, duration } = e.data.data || {};
+    if (!duration || duration === 0) return;
+
+    if (evtType === 'time' || evtType === 'pause') {
+        const percent = Math.min(Math.round((currentTime / duration) * 100), 100);
+
+        // Only update if the real player is ahead of the manual slider
+        if (percent > currentProgress) {
+            currentProgress   = percent;
+            lastSavedProgress = percent;
+            const slider = document.getElementById('progressSlider');
+            const label  = document.getElementById('progressPercent');
+            if (slider) slider.value          = percent;
+            if (label)  label.textContent     = percent + '%';
+
+            // Sync watchStartTime so the timer doesn't overwrite real data
+            if (currentMovie) {
+                const totalMin = parseDurationToMinutes(currentMovie.duration);
+                watchStartTime = Date.now() - (percent / 100) * totalMin * 60000;
+            }
+        }
+    }
+
+    if (evtType === 'complete') {
+        clearInterval(progressUpdateInterval);
+        _persistProgress(100);
+        renderContinueWatching();
+        showToast('🎉 Movie complete! Great watch!');
+    }
+});
+    // ═══════════════════════════════════════════════════
+//  INTERSECTION OBSERVER — LAZY CARD FADE-IN
+// ═══════════════════════════════════════════════════
+
+const cardObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            // Stop watching it once it's appeared
+            cardObserver.unobserve(entry.target);
+        }
+    });
+}, {
+    threshold: 0.1,       // Trigger when 10% of card is visible
+    rootMargin: '0px 0px -50px 0px'  // Start slightly before it enters view
+});
+
+// Call this every time you render movies
+function observeCards() {
+    document.querySelectorAll('.movie-card').forEach(card => {
+        cardObserver.observe(card);
+    });
+}
 </script>
 </body>
 </html>
