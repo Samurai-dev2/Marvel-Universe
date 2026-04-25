@@ -1668,13 +1668,7 @@ async function submitComment() {
     }
 }
 
-// Add ESC key support for avatar modal
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { 
-        closeModal(); 
-        closeAuth(); 
-        closeAvatarPicker(); // ✅ Add this
-    }
+
 });
 // ═══════════════════════════════════════════════════
 //  USER DATA
@@ -2475,9 +2469,12 @@ document.getElementById('authModal').addEventListener('click', e => {
 });
 
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closeAuth(); }
+    if (e.key === 'Escape') { 
+        closeModal(); 
+        closeAuth(); 
+        closeAvatarPicker(); // ✅ Add this
+    }
 });
-
 document.addEventListener('DOMContentLoaded', () => {
     const p = document.getElementById('signupPassword');
     if (p) p.addEventListener('input', checkStrength);
