@@ -1952,41 +1952,6 @@ async function loadMoreComments() {
     await loadComments(currentMovieImdb, true);
 }
 
-function createCommentCard(comment) {
-    const card     = document.createElement('div');
-    card.className = 'comment-card';
-    card.id        = 'comment-' + comment.id;
-
-    const initials  = comment.username.slice(0, 2).toUpperCase();
-    const timeAgo   = formatTimeAgo(comment.created_at);
-    const isOwner   = currentUser && currentUser.id === comment.user_id;
-    // Generate a consistent colour from username
-    const colours   = ['#e23636','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4'];
-    const colourIdx = comment.username.charCodeAt(0) % colours.length;
-    const avatarBg  = colours[colourIdx];
-
-    card.innerHTML = `
-        <div class="comment-header">
-            <div class="comment-user">
-                <div class="comment-avatar" style="background:${avatarBg}">${initials}</div>
-                <div>
-                    <div class="comment-username">${escapeHtml(comment.username)}</div>
-                    <div class="comment-time">${timeAgo}</div>
-                </div>
-            </div>
-        </div>
-        <div class="comment-content">${escapeHtml(comment.content)}</div>
-        <div class="comment-actions">
-            ${isOwner ? `
-                <button class="comment-action-btn comment-delete-btn"
-                    onclick="deleteComment('${comment.id}')">
-                    🗑️ Delete
-                </button>` : ''}
-        </div>`;
-
-    return card;
-}
-
 async function submitComment() {
     if (!currentUser) { openAuth(); return; }
     if (!currentMovie) return;
@@ -2120,25 +2085,10 @@ function escapeHtml(text) {
 // ═══════════════════════════════════════════════════
 //  NAV UI
 // ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+//  NAV UI
+// ═══════════════════════════════════════════════════
 
-function updateNavForUser(user) {
-    const initials = user.username.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    const authBtn  = document.getElementById('authBtn');
-    if (authBtn) {
-        authBtn.outerHTML = `
-            <div class="nav-user" id="navUser">
-                <div class="user-avatar">${initials}</div>
-                <span class="user-name">${user.username.split(' ')[0]}</span>
-                <div class="user-dropdown">
-                    <div class="dropdown-item">👤 ${user.username}</div>
-                    <div class="dropdown-item" onclick="showWatchlistToast()">
-                        ❤️ Watchlist (${userWatchlist.length})
-                    </div>
-                    <div class="dropdown-item logout" onclick="logoutUser()">🚪 Logout</div>
-                </div>
-            </div>`;
-    }
-}
 
 function updateNavForGuest() {
     const navUser = document.getElementById('navUser');
