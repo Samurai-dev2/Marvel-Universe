@@ -1093,6 +1093,14 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
         font-size: 28px;
     }
 }
+
+#profileAvatarDisplay {
+    transition: transform 0.3s ease;
+}
+
+#profileAvatarDisplay:hover {
+    transform: scale(1.1);
+}
 </style>
 </head>
 <body>
@@ -1248,7 +1256,63 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
         </button>
     </div>
 </div>
+<!-- PROFILE SETTINGS MODAL -->
+<div class="auth-overlay" id="profileModal">
+    <div class="auth-box" style="max-width: 480px;">
+        <div class="auth-header">
+            <h2 class="auth-title">Profile Settings</h2>
+            <button class="modal-close" onclick="closeProfile()">✕</button>
+        </div>
+        
+        <!-- Current Avatar Display -->
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div style="width: 80px; height: 80px; margin: 0 auto 12px; background: var(--marvel-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; border: 3px solid rgba(226,54,54,0.5);" id="profileAvatarDisplay">
+                🦸‍♂️
+            </div>
+            <button class="btn-secondary" onclick="openAvatarPickerFromProfile()" style="padding: 8px 20px; font-size: 12px;">
+                🎨 Change Avatar
+            </button>
+        </div>
 
+        <!-- Username Input -->
+        <div class="input-group">
+            <span class="input-icon">🦸</span>
+            <input type="text" placeholder="Your Hero Name" id="profileUsername" maxlength="30">
+        </div>
+        
+        <!-- Email (Read-only) -->
+        <div class="input-group" style="opacity: 0.6; cursor: not-allowed;">
+            <span class="input-icon">✉️</span>
+            <input type="email" id="profileEmail" readonly style="cursor: not-allowed;">
+        </div>
+        <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 20px; text-align: center;">
+            Email cannot be changed
+        </p>
+
+        <!-- Account Info -->
+        <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 12px; margin-bottom: 20px;">
+            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">ACCOUNT CREATED</div>
+            <div style="font-size: 13px; color: white;" id="profileCreatedAt">-</div>
+        </div>
+
+        <!-- Error/Success Messages -->
+        <div class="auth-error" id="profileError"></div>
+        <div class="auth-success" id="profileSuccess"></div>
+
+        <!-- Save Button -->
+        <button class="auth-submit" onclick="saveProfile()" id="profileSaveBtn">
+            Save Changes
+        </button>
+
+        <!-- Danger Zone -->
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.08);">
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">🔴 DANGER ZONE</p>
+            <button class="btn-secondary" onclick="handleDeleteAccount()" style="width: 100%; background: rgba(239, 68, 68, 0.1); border-color: #ef4444; color: #ef4444; padding: 10px;">
+                🗑️ Delete Account
+            </button>
+        </div>
+    </div>
+</div>
 <!-- MOVIE MODAL -->
 <div class="modal-overlay" id="modal">
     <div class="modal">
@@ -1601,6 +1665,10 @@ function selectAvatar(emoji) {
     });
 }
 
+
+    // ═══════════════════════════════════════════════════
+//  PROFILE SETTINGS
+// ═══════════════════════════════════════════════════
 async function saveAvatar() {
     if (!currentUser) return;
 
@@ -1609,16 +1677,19 @@ async function saveAvatar() {
     btn.textContent = '⏳ Saving...';
 
     try {
+        const currentUsername = currentUser.user_metadata?.username || currentUser.email.split('@')[0];
+
         const { error } = await sb.auth.updateUser({
-            data: { avatar: selectedAvatar }
+            data: { 
+                avatar: selectedAvatar,
+                username: currentUsername
+            }
         });
 
         if (error) throw error;
 
-        // Update current user metadata
         currentUser.user_metadata.avatar = selectedAvatar;
 
-        // ✅ NEW: Update all existing comments with new avatar
         const { error: commentError } = await sb
             .from('comments')
             .update({ user_avatar: selectedAvatar })
@@ -1626,33 +1697,34 @@ async function saveAvatar() {
 
         if (commentError) {
             console.error('Failed to update comments:', commentError);
-            // Don't throw - avatar still saved to profile
         }
 
-        // Update nav avatar
         updateNavAvatar();
 
-        // ✅ NEW: Refresh comments on current movie if modal is open
+        const profileAvatarDisplay = document.getElementById('profileAvatarDisplay');
+        if (profileAvatarDisplay) {
+            profileAvatarDisplay.textContent = selectedAvatar;
+        }
+
         if (currentMovie) {
-            const list = document.getElementById('commentsList');
-            if (list) {
-                // Update avatars in currently displayed comments
-                document.querySelectorAll('.comment-card').forEach(card => {
-                    const cardId = card.id.replace('comment-', '');
-                    // Find if this comment belongs to current user
-                    const deleteBtn = card.querySelector('.comment-delete-btn');
-                    if (deleteBtn) {
-                        // This is user's own comment
-                        const avatarEl = card.querySelector('.comment-avatar');
-                        if (avatarEl) {
-                            avatarEl.textContent = selectedAvatar;
-                        }
+            document.querySelectorAll('.comment-card').forEach(card => {
+                const deleteBtn = card.querySelector('.comment-delete-btn');
+                if (deleteBtn) {
+                    const avatarEl = card.querySelector('.comment-avatar');
+                    if (avatarEl) {
+                        avatarEl.textContent = selectedAvatar;
                     }
-                });
-            }
+                }
+            });
         }
 
         closeAvatarPicker();
+        
+        const profileModal = document.getElementById('profileModal');
+        if (profileModal && !profileModal.classList.contains('active')) {
+            setTimeout(() => openProfile(), 300);
+        }
+
         showToast('✅ Avatar updated everywhere!');
 
     } catch (err) {
@@ -1661,6 +1733,171 @@ async function saveAvatar() {
     } finally {
         btn.disabled = false;
         btn.textContent = 'Save Avatar';
+    }
+}
+function openProfile() {
+    if (!currentUser) {
+        showToast('⚠️ Please login first!');
+        openAuth();
+        return;
+    }
+
+    const username = currentUser.user_metadata?.username || currentUser.email.split('@')[0];
+    const avatar = currentUser.user_metadata?.avatar || '🦸‍♂️';
+    const email = currentUser.email;
+    const createdAt = new Date(currentUser.created_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
+    document.getElementById('profileUsername').value = username;
+    document.getElementById('profileEmail').value = email;
+    document.getElementById('profileAvatarDisplay').textContent = avatar;
+    document.getElementById('profileCreatedAt').textContent = createdAt;
+    document.getElementById('profileError').textContent = '';
+    document.getElementById('profileSuccess').textContent = '';
+
+    document.getElementById('profileModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeProfile() {
+    document.getElementById('profileModal').classList.remove('active');
+    document.getElementById('profileError').textContent = '';
+    document.getElementById('profileSuccess').textContent = '';
+    document.body.style.overflow = '';
+}
+
+function openAvatarPickerFromProfile() {
+    closeProfile();
+    openAvatarPicker();
+}
+
+async function saveProfile() {
+    if (!currentUser) return;
+
+    const newUsername = document.getElementById('profileUsername').value.trim();
+    const errorEl = document.getElementById('profileError');
+    const successEl = document.getElementById('profileSuccess');
+    const btn = document.getElementById('profileSaveBtn');
+
+    errorEl.textContent = '';
+    successEl.textContent = '';
+
+    if (newUsername.length < 2) {
+        errorEl.textContent = '❌ Username must be at least 2 characters';
+        return;
+    }
+
+    if (newUsername.length > 30) {
+        errorEl.textContent = '❌ Username too long (max 30 characters)';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Saving...';
+
+    try {
+        const currentAvatar = currentUser.user_metadata?.avatar || '🦸‍♂️';
+
+        const { error } = await sb.auth.updateUser({
+            data: {
+                username: newUsername,
+                avatar: currentAvatar
+            }
+        });
+
+        if (error) throw error;
+
+        currentUser.user_metadata.username = newUsername;
+
+        const { error: commentError } = await sb
+            .from('comments')
+            .update({ username: newUsername })
+            .eq('user_id', currentUser.id);
+
+        if (commentError) {
+            console.error('Failed to update comments:', commentError);
+        }
+
+        updateNavForUser({ 
+            username: newUsername, 
+            email: currentUser.email,
+            avatar: currentAvatar
+        });
+
+        if (currentMovie) {
+            document.querySelectorAll('.comment-card').forEach(card => {
+                const deleteBtn = card.querySelector('.comment-delete-btn');
+                if (deleteBtn) {
+                    const usernameEl = card.querySelector('.comment-username');
+                    if (usernameEl) {
+                        usernameEl.textContent = newUsername;
+                    }
+                }
+            });
+        }
+
+        successEl.textContent = '✅ Profile updated successfully!';
+        showToast('✅ Profile saved!');
+
+        setTimeout(() => {
+            closeProfile();
+        }, 1500);
+
+    } catch (err) {
+        errorEl.textContent = '❌ Failed to update profile: ' + err.message;
+        console.error('Profile update error:', err);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+    }
+}
+
+async function handleDeleteAccount() {
+    if (!currentUser) return;
+
+    const confirmation = prompt(
+        '⚠️ WARNING: This will permanently delete your account and all data!\n\n' +
+        'Type "DELETE" to confirm:'
+    );
+
+    if (confirmation !== 'DELETE') {
+        showToast('Account deletion cancelled');
+        return;
+    }
+
+    const secondConfirm = confirm(
+        '🚨 FINAL WARNING!\n\n' +
+        'This action CANNOT be undone. All your:\n' +
+        '• Comments\n' +
+        '• Watch progress\n' +
+        '• Watchlist\n' +
+        '• Favorites\n\n' +
+        'Will be PERMANENTLY deleted.\n\n' +
+        'Continue?'
+    );
+
+    if (!secondConfirm) {
+        showToast('Account deletion cancelled');
+        return;
+    }
+
+    try {
+        await sb.from('comments').delete().eq('user_id', currentUser.id);
+        await sb.from('movie_reactions').delete().eq('user_id', currentUser.id);
+
+        showToast('⚠️ Please contact support to complete account deletion');
+        
+        localStorage.removeItem('marvel_' + currentUser.id);
+        
+        await logoutUser();
+        closeProfile();
+
+    } catch (err) {
+        showToast('❌ Error deleting account: ' + err.message);
+        console.error('Delete account error:', err);
     }
 }
     // ═══════════════════════════════════════════════════
@@ -2365,8 +2602,8 @@ function updateNavForUser(user) {
                 <span class="user-name">${username.split(' ')[0]}</span>
                 <div class="user-dropdown">
                     <div class="dropdown-item">👤 ${username}</div>
-                    <div class="dropdown-item" onclick="openAvatarPicker()">
-                        🎨 Change Avatar
+                    <div class="dropdown-item" onclick="openProfile()">
+                        ⚙️ Profile Settings
                     </div>
                     <div class="dropdown-item" onclick="showWatchlistToast()">
                         ❤️ Watchlist (${userWatchlist.length})
@@ -2719,7 +2956,8 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { 
         closeModal(); 
         closeAuth(); 
-        closeAvatarPicker(); // ✅ Add this
+        closeAvatarPicker();
+        closeProfile();
     }
 });
 document.addEventListener('DOMContentLoaded', () => {
