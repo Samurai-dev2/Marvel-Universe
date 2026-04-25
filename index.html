@@ -1618,11 +1618,42 @@ async function saveAvatar() {
         // Update current user metadata
         currentUser.user_metadata.avatar = selectedAvatar;
 
+        // ✅ NEW: Update all existing comments with new avatar
+        const { error: commentError } = await sb
+            .from('comments')
+            .update({ user_avatar: selectedAvatar })
+            .eq('user_id', currentUser.id);
+
+        if (commentError) {
+            console.error('Failed to update comments:', commentError);
+            // Don't throw - avatar still saved to profile
+        }
+
         // Update nav avatar
         updateNavAvatar();
 
+        // ✅ NEW: Refresh comments on current movie if modal is open
+        if (currentMovie) {
+            const list = document.getElementById('commentsList');
+            if (list) {
+                // Update avatars in currently displayed comments
+                document.querySelectorAll('.comment-card').forEach(card => {
+                    const cardId = card.id.replace('comment-', '');
+                    // Find if this comment belongs to current user
+                    const deleteBtn = card.querySelector('.comment-delete-btn');
+                    if (deleteBtn) {
+                        // This is user's own comment
+                        const avatarEl = card.querySelector('.comment-avatar');
+                        if (avatarEl) {
+                            avatarEl.textContent = selectedAvatar;
+                        }
+                    }
+                });
+            }
+        }
+
         closeAvatarPicker();
-        showToast('✅ Avatar updated!');
+        showToast('✅ Avatar updated everywhere!');
 
     } catch (err) {
         showToast('❌ Failed to save avatar');
@@ -1630,38 +1661,6 @@ async function saveAvatar() {
     } finally {
         btn.disabled = false;
         btn.textContent = 'Save Avatar';
-    }
-}
-
-function updateNavAvatar() {
-    const avatarEl = document.querySelector('.user-avatar');
-    if (avatarEl && currentUser) {
-        const avatar = currentUser.user_metadata?.avatar || '🦸‍♂️';
-        avatarEl.textContent = avatar;
-        avatarEl.style.fontSize = '20px'; // Ensure emoji is big enough
-    }
-}
-
-// Update the existing updateNavForUser function to use avatar
-function updateNavForUser(user) {
-    const avatar = user.avatar || currentUser?.user_metadata?.avatar || '🦸‍♂️';
-    const authBtn = document.getElementById('authBtn');
-    if (authBtn) {
-        authBtn.outerHTML = `
-            <div class="nav-user" id="navUser">
-                <div class="user-avatar" style="font-size:20px">${avatar}</div>
-                <span class="user-name">${user.username.split(' ')[0]}</span>
-                <div class="user-dropdown">
-                    <div class="dropdown-item">👤 ${user.username}</div>
-                    <div class="dropdown-item" onclick="openAvatarPicker()">
-                        🎨 Change Avatar
-                    </div>
-                    <div class="dropdown-item" onclick="showWatchlistToast()">
-                        ❤️ Watchlist (${userWatchlist.length})
-                    </div>
-                    <div class="dropdown-item logout" onclick="logoutUser()">🚪 Logout</div>
-                </div>
-            </div>`;
     }
 }
     // ═══════════════════════════════════════════════════
