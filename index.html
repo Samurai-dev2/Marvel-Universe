@@ -828,7 +828,86 @@ nav {
 
 .btn-favorite:hover { background: rgba(226,54,54,0.2); border-color: var(--marvel-red); }
 .btn-favorite.saved { background: var(--marvel-red); border-color: var(--marvel-red); }
+/* ═══════════════════════════════════════
+   LIKE/DISLIKE BUTTONS
+═══════════════════════════════════════ */
+.btn-reaction {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
 
+.btn-reaction:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+}
+
+.btn-reaction.liked {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: #22c55e;
+    color: #22c55e;
+}
+
+.btn-reaction.liked:hover {
+    background: rgba(34, 197, 94, 0.3);
+}
+
+.btn-reaction.disliked {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.btn-reaction.disliked:hover {
+    background: rgba(239, 68, 68, 0.3);
+}
+
+.reaction-icon {
+    font-size: 14px;
+    transition: transform 0.2s;
+}
+
+.btn-reaction:hover .reaction-icon {
+    transform: scale(1.2);
+}
+
+.btn-reaction.liked .reaction-icon {
+    animation: likeHeart 0.5s ease;
+}
+
+.btn-reaction.disliked .reaction-icon {
+    animation: dislikeShake 0.5s ease;
+}
+
+@keyframes likeHeart {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+}
+
+@keyframes dislikeShake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-15deg); }
+    75% { transform: rotate(15deg); }
+}
+
+.reaction-count {
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+}
 /* ═══════════════════════════════════════
    ANIMATIONS
 ═══════════════════════════════════════ */
@@ -1178,6 +1257,14 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
                 <span class="modal-phase" id="modalPhase">Phase 1</span>
                 <h2 class="modal-title" id="modalTitle">Movie Title</h2>
             </div>
+             <button class="btn-reaction" id="likeBtn" onclick="toggleLike()">
+            <span class="reaction-icon">👍</span>
+            <span class="reaction-count" id="likeCount">0</span>
+        </button>
+        <button class="btn-reaction" id="dislikeBtn" onclick="toggleDislike()">
+            <span class="reaction-icon">👎</span>
+            <span class="reaction-count" id="dislikeCount">0</span>
+        </button>
             <div class="modal-actions">
                 <button class="btn-watchlist" id="watchlistBtn" onclick="toggleWatchlist()">❤️ Watchlist</button>
                 <button class="btn-favorite" id="favBtn" onclick="toggleFavorite()">♡ Favorite</button>
@@ -1575,6 +1662,186 @@ function updateNavForUser(user) {
                     <div class="dropdown-item logout" onclick="logoutUser()">🚪 Logout</div>
                 </div>
             </div>`;
+    }
+}
+    // ═══════════════════════════════════════════════════
+//  LIKE/DISLIKE SYSTEM
+// ═══════════════════════════════════════════════════
+
+let currentUserReaction = null; // 'like', 'dislike', or null
+let likesCount = 0;
+let dislikesCount = 0;
+
+async function loadReactions(imdb) {
+    if (!imdb) return;
+
+    try {
+        // Get total counts
+        const { data: reactions, error } = await sb
+            .from('movie_reactions')
+            .select('reaction')
+            .eq('movie_imdb', imdb);
+
+        if (error) throw error;
+
+        likesCount = reactions.filter(r => r.reaction === 'like').length;
+        dislikesCount = reactions.filter(r => r.reaction === 'dislike').length;
+
+        // Get current user's reaction
+        if (currentUser) {
+            const { data: userReaction } = await sb
+                .from('movie_reactions')
+                .select('reaction')
+                .eq('movie_imdb', imdb)
+                .eq('user_id', currentUser.id)
+                .single();
+
+            currentUserReaction = userReaction?.reaction || null;
+        } else {
+            currentUserReaction = null;
+        }
+
+        updateReactionUI();
+
+    } catch (err) {
+        console.error('Error loading reactions:', err);
+        likesCount = 0;
+        dislikesCount = 0;
+        currentUserReaction = null;
+        updateReactionUI();
+    }
+}
+
+function updateReactionUI() {
+    const likeBtn = document.getElementById('likeBtn');
+    const dislikeBtn = document.getElementById('dislikeBtn');
+    const likeCountEl = document.getElementById('likeCount');
+    const dislikeCountEl = document.getElementById('dislikeCount');
+
+    if (!likeBtn || !dislikeBtn) return;
+
+    // Update counts
+    likeCountEl.textContent = likesCount;
+    dislikeCountEl.textContent = dislikesCount;
+
+    // Update active states
+    likeBtn.classList.toggle('liked', currentUserReaction === 'like');
+    dislikeBtn.classList.toggle('disliked', currentUserReaction === 'dislike');
+}
+
+async function toggleLike() {
+    if (!currentUser) {
+        showToast('⚠️ Please login to like movies!');
+        openAuth();
+        return;
+    }
+
+    if (!currentMovie) return;
+
+    const likeBtn = document.getElementById('likeBtn');
+    likeBtn.disabled = true;
+
+    try {
+        if (currentUserReaction === 'like') {
+            // Remove like
+            await sb
+                .from('movie_reactions')
+                .delete()
+                .eq('user_id', currentUser.id)
+                .eq('movie_imdb', currentMovie.imdb);
+
+            currentUserReaction = null;
+            likesCount--;
+            showToast('👍 Like removed');
+
+        } else {
+            // Add or update to like
+            const { error } = await sb
+                .from('movie_reactions')
+                .upsert({
+                    user_id: currentUser.id,
+                    movie_imdb: currentMovie.imdb,
+                    reaction: 'like'
+                }, {
+                    onConflict: 'user_id,movie_imdb'
+                });
+
+            if (error) throw error;
+
+            if (currentUserReaction === 'dislike') {
+                dislikesCount--;
+            }
+
+            currentUserReaction = 'like';
+            likesCount++;
+            showToast('👍 You liked this movie!');
+        }
+
+        updateReactionUI();
+
+    } catch (err) {
+        showToast('❌ Failed to update reaction');
+        console.error('Like error:', err);
+    } finally {
+        likeBtn.disabled = false;
+    }
+}
+
+async function toggleDislike() {
+    if (!currentUser) {
+        showToast('⚠️ Please login to dislike movies!');
+        openAuth();
+        return;
+    }
+
+    if (!currentMovie) return;
+
+    const dislikeBtn = document.getElementById('dislikeBtn');
+    dislikeBtn.disabled = true;
+
+    try {
+        if (currentUserReaction === 'dislike') {
+            // Remove dislike
+            await sb
+                .from('movie_reactions')
+                .delete()
+                .eq('user_id', currentUser.id)
+                .eq('movie_imdb', currentMovie.imdb);
+
+            currentUserReaction = null;
+            dislikesCount--;
+            showToast('👎 Dislike removed');
+
+        } else {
+            // Add or update to dislike
+            const { error } = await sb
+                .from('movie_reactions')
+                .upsert({
+                    user_id: currentUser.id,
+                    movie_imdb: currentMovie.imdb,
+                    reaction: 'dislike'
+                }, {
+                    onConflict: 'user_id,movie_imdb'
+                });
+
+            if (error) throw error;
+
+            if (currentUserReaction === 'like') {
+                likesCount--;
+            }
+
+            currentUserReaction = 'dislike';
+            dislikesCount++;
+            showToast('👎 You disliked this movie');
+        }
+
+        updateReactionUI();
+
+    } catch (err) {
+        showToast('❌ Failed to update reaction');
+        console.error('Dislike error:', err);
+    } finally {
+        dislikeBtn.disabled = false;
     }
 }
 
@@ -2345,7 +2612,9 @@ function openMovie(movie) {
     // ── Comments ──
     updateCommentUI();
     loadComments(movie.imdb);
-
+// reactions 
+      loadReactions(movie.imdb);
+    
     // Character counter
     const commentInput = document.getElementById('commentInput');
     if (commentInput) {
