@@ -1150,7 +1150,15 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
         <div class="stat-item"><div class="stat-number">1080P</div><div class="stat-label">Quality</div></div>
     </div>
 </section>
-
+<!-- FAVORITES -->
+<div class="continue-watching-section" id="favoritesSection">
+    <div class="section-header">
+        <h2 class="section-title">My Favorites</h2>
+        <a href="#" class="see-all" onclick="clearAllFavorites(event)">Clear All</a>
+    </div>
+    <div class="continue-grid" id="favoritesGrid"></div>
+</div>
+    
 <!-- CONTINUE WATCHING -->
 <div class="continue-watching-section" id="continueSection">
     <div class="section-header">
@@ -1578,6 +1586,7 @@ async function logoutUser() {
     userWatching  = [];
     updateNavForGuest();
     hideContinueWatching();
+    hideFavorites();
     updateCommentUI();
     showToast('Logged out. See you, Hero! 👋');
 }
@@ -2185,8 +2194,8 @@ async function loadUserData() {
     userWatchlist = saved.watchlist || [];
     userWatching  = saved.watching  || [];
     renderContinueWatching();
+    renderFavorites(); // ✅ ADD THIS LINE
 }
-
 function saveUserData() {
     if (!currentUser) return;
     const key = 'marvel_' + currentUser.id;
@@ -2223,6 +2232,7 @@ function toggleWatchlist() {
 function toggleFavorite() {
     if (!currentMovie) return;
     if (!currentUser) { showToast('⚠️ Please login first!'); openAuth(); return; }
+    
     const idx = userFavorites.indexOf(currentMovie.imdb);
     if (idx === -1) {
         userFavorites.push(currentMovie.imdb);
@@ -2231,10 +2241,11 @@ function toggleFavorite() {
         userFavorites.splice(idx, 1);
         showToast('✅ Removed from favorites');
     }
+    
     saveUserData();
     updateModalButtons();
+    renderFavorites();
 }
-
 // ═══════════════════════════════════════════════════
 //  PROGRESS
 // ═══════════════════════════════════════════════════
@@ -2372,6 +2383,91 @@ function clearAllWatching(e) {
     saveUserData();
     hideContinueWatching();
     showToast('Continue watching cleared!');
+}
+    // ═══════════════════════════════════════════════════
+//  FAVORITES DISPLAY
+// ═══════════════════════════════════════════════════
+
+function renderFavorites() {
+    const section = document.getElementById('favoritesSection');
+    const grid    = document.getElementById('favoritesGrid');
+
+    if (!currentUser || userFavorites.length === 0) {
+        hideFavorites();
+        return;
+    }
+
+    section.classList.add('visible');
+    grid.innerHTML = '';
+
+    // Show up to 6 favorites
+    userFavorites.slice(0, 6).forEach(imdb => {
+        const movie = movies.find(m => m.imdb === imdb);
+        if (!movie) return;
+
+        const card = document.createElement('div');
+        card.className = 'continue-card';
+        card.innerHTML = `
+            <button class="continue-remove" onclick="removeFromFavorites('${movie.imdb}', event)">✕</button>
+            <div class="continue-poster">
+                <img src="${movie.poster}" alt="${movie.title}" loading="lazy">
+                <div class="continue-overlay">
+                    <div class="continue-play">▶</div>
+                </div>
+            </div>
+            <div class="continue-info">
+                <div class="continue-title">${movie.title}</div>
+                <div class="continue-progress-text">⭐ Favorite</div>
+            </div>`;
+        
+        card.addEventListener('click', () => openMovie(movie));
+        grid.appendChild(card);
+    });
+}
+
+function hideFavorites() {
+    const section = document.getElementById('favoritesSection');
+    if (section) {
+        section.classList.remove('visible');
+    }
+}
+
+function removeFromFavorites(imdb, e) {
+    e.stopPropagation();
+    
+    const idx = userFavorites.indexOf(imdb);
+    if (idx !== -1) {
+        userFavorites.splice(idx, 1);
+    }
+    
+    saveUserData();
+    renderFavorites();
+    
+    // Update button if movie modal is open
+    if (currentMovie && currentMovie.imdb === imdb) {
+        updateModalButtons();
+    }
+    
+    showToast('Removed from favorites');
+}
+
+function clearAllFavorites(e) {
+    e.preventDefault();
+    
+    if (!confirm('Remove all favorites?')) {
+        return;
+    }
+    
+    userFavorites = [];
+    saveUserData();
+    hideFavorites();
+    
+    // Update button if movie modal is open
+    if (currentMovie) {
+        updateModalButtons();
+    }
+    
+    showToast('All favorites cleared!');
 }
 
 // ═══════════════════════════════════════════════════
