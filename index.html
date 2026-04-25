@@ -2351,10 +2351,40 @@ function escapeHtml(text) {
 // ═══════════════════════════════════════════════════
 //  NAV UI
 // ═══════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════
-//  NAV UI
-// ═══════════════════════════════════════════════════
 
+
+function updateNavForUser(user) {
+    const avatar = user.avatar || currentUser?.user_metadata?.avatar || '🦸‍♂️';
+    const username = user.username || currentUser?.user_metadata?.username || user.email?.split('@')[0] || 'User';
+    const authBtn = document.getElementById('authBtn');
+    
+    if (authBtn) {
+        authBtn.outerHTML = `
+            <div class="nav-user" id="navUser">
+                <div class="user-avatar" style="font-size:20px">${avatar}</div>
+                <span class="user-name">${username.split(' ')[0]}</span>
+                <div class="user-dropdown">
+                    <div class="dropdown-item">👤 ${username}</div>
+                    <div class="dropdown-item" onclick="openAvatarPicker()">
+                        🎨 Change Avatar
+                    </div>
+                    <div class="dropdown-item" onclick="showWatchlistToast()">
+                        ❤️ Watchlist (${userWatchlist.length})
+                    </div>
+                    <div class="dropdown-item logout" onclick="logoutUser()">🚪 Logout</div>
+                </div>
+            </div>`;
+    }
+}
+
+function updateNavAvatar() {
+    const avatarEl = document.querySelector('.user-avatar');
+    if (avatarEl && currentUser) {
+        const avatar = currentUser.user_metadata?.avatar || '🦸‍♂️';
+        avatarEl.textContent = avatar;
+        avatarEl.style.fontSize = '20px';
+    }
+}
 
 function updateNavForGuest() {
     const navUser = document.getElementById('navUser');
@@ -2385,7 +2415,6 @@ function updateModalButtons() {
         fBtn.classList.toggle('saved', inFav);
     }
 }
-
 // ═══════════════════════════════════════════════════
 //  AUTH UI
 // ═══════════════════════════════════════════════════
