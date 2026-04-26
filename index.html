@@ -1457,7 +1457,21 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
         allowfullscreen
         allow="autoplay; fullscreen; picture-in-picture">
     </iframe>
-
+  <div class="progress-tracker">
+        <span class="progress-label">PROGRESS:</span>
+        <input 
+            type="range" 
+            id="progressSlider" 
+            class="progress-slider" 
+            min="0" 
+            max="100" 
+            value="0"
+            oninput="updateProgress(this.value)">
+        <span class="progress-percent" id="progressPercent">0%</span>
+        <button class="btn-watchlist" onclick="saveProgress()" style="margin-left: 10px; padding: 4px 12px; font-size: 10px;">
+            💾 Save
+        </button>
+    </div>
     <!-- SOURCE SWITCHER — bottom bar -->
     <div class="source-switcher" id="sourceSwitcher">
         <span class="source-label">🎬 Source:</span>
@@ -3016,12 +3030,16 @@ function openMovie(movie) {
         ${movie.genre.split(', ').map(g => `<span class="meta-tag">${g}</span>`).join('')}`;
 
     // ── Progress ──
-    const savedItem     = userWatching.find(w => w.imdb === movie.imdb);
-    const savedProgress = savedItem ? savedItem.progress : 0;
-    currentProgress     = savedProgress;
-    lastSavedProgress   = savedProgress;
-    document.getElementById('progressSlider').value        = savedProgress;
-    document.getElementById('progressPercent').textContent = savedProgress + '%';
+   const savedItem     = userWatching.find(w => w.imdb === movie.imdb);
+const savedProgress = savedItem ? savedItem.progress : 0;
+currentProgress     = savedProgress;
+lastSavedProgress   = savedProgress;
+
+const progressSlider = document.getElementById('progressSlider');
+const progressPercent = document.getElementById('progressPercent');
+
+if (progressSlider) progressSlider.value = savedProgress;
+if (progressPercent) progressPercent.textContent = savedProgress + '%';
 
     const totalMinutes = parseDurationToMinutes(movie.duration);
     watchStartTime = Date.now() - (savedProgress / 100) * totalMinutes * 60000;
