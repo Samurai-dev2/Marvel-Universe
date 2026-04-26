@@ -536,6 +536,7 @@ nav {
     flex-direction: column;
     padding: 0;
     overflow: hidden;
+    min-height: 400px;
 }
 
 .modal-player iframe {
@@ -1400,9 +1401,8 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
         <button class="btn-watchlist" onclick="saveProgress()" style="margin-left: 10px; padding: 4px 12px; font-size: 10px;">
             💾 Save
         </button>
-    </div>
-    </div>
 
+    </div>
 </div>
 
    
@@ -2370,8 +2370,31 @@ function _persistProgress(percent) {
     saveUserData();
 }
 
-function updateProgress(val) {}
-
+function updateProgress(val) {
+    if (!currentMovie || !currentUser) return;
+    
+    const percent = parseInt(val);
+    currentProgress = percent;
+    lastSavedProgress = percent;
+    
+    // Update the visual display
+    const progressPercent = document.getElementById('progressPercent');
+    if (progressPercent) {
+        progressPercent.textContent = percent + '%';
+    }
+    
+    // Sync the watch start time so the auto-ticker doesn't override
+    const totalMinutes = parseDurationToMinutes(currentMovie.duration);
+    watchStartTime = Date.now() - (percent / 100) * totalMinutes * 60000;
+    
+    // Optional: Show a small indicator that you can save
+    if (percent !== lastSavedProgress) {
+        const saveBtn = document.querySelector('.progress-tracker .btn-watchlist');
+        if (saveBtn && !saveBtn.classList.contains('pulse')) {
+            saveBtn.style.animation = 'pulse 1s infinite';
+        }
+    }
+}
 function saveProgress() {
     if (!currentMovie) return;
     if (!currentUser) { showToast('⚠️ Please login to save progress!'); openAuth(); return; }
