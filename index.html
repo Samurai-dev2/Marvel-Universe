@@ -605,9 +605,11 @@ nav {
 .modal-sidebar::-webkit-scrollbar-thumb { background: rgba(226,54,54,0.4); border-radius: 2px; }
 
 .sidebar-poster {
-    width: 100%; 
+    width: 100%;
+    max-width: 200px;
+    margin: 0 auto 14px;
+    display: block;
     border-radius: 8px;
-    margin-bottom: 14px;
     border: 1px solid rgba(255,255,255,0.08);
 }
 
@@ -1101,80 +1103,7 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
 #profileAvatarDisplay:hover {
     transform: scale(1.1);
 }
-    /* ═══════════════════════════════════════
-   SOURCE SWITCHER
-═══════════════════════════════════════ */
-.source-switcher {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: #0d0d0d;
-    border-top: 1px solid rgba(255,255,255,0.07);
-    padding: 10px 16px;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-    min-height: 48px;
-}
 
-.source-label {
-    font-size: 10px;
-    color: var(--text-secondary);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    white-space: nowrap;
-    margin-right: 2px;
-}
-
-.source-btn {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: var(--text-secondary);
-    padding: 5px 13px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    transition: all 0.2s;
-    white-space: nowrap;
-}
-
-.source-btn:hover {
-    background: rgba(255,255,255,0.12);
-    color: white;
-    border-color: rgba(255,255,255,0.2);
-    transform: translateY(-1px);
-}
-
-.source-btn.active {
-    background: var(--marvel-red);
-    border-color: var(--marvel-red);
-    color: white;
-    box-shadow: 0 0 10px rgba(226,54,54,0.4);
-}
-
-.source-status {
-    margin-left: auto;
-    font-size: 10px;
-    color: var(--text-secondary);
-    letter-spacing: 1px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.source-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #22c55e;
-    animation: pulse 1.5s infinite;
-    flex-shrink: 0;
-}
-
-.source-dot.loading {
-    background: var(--gold);
-}
     /* ═══════════════════════════════════════
    LAZY LOAD FADE-IN
 ═══════════════════════════════════════ */
@@ -1570,6 +1499,7 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
 </footer>
 
 <script>
+
 const { createClient } = supabase;
 
 const SUPABASE_URL = 'https://mdgyhsxeepserienlrik.supabase.co';
@@ -1752,6 +1682,7 @@ async function checkAuthState() {
         updateNavForGuest();
     }
 }
+
 // ═══════════════════════════════════════════════════
 //  AVATAR SYSTEM
 // ═══════════════════════════════════════════════════
@@ -1767,7 +1698,7 @@ const PRESET_AVATARS = [
     '🌪️', '🌊', '🌋', '☄️'
 ];
 
-let selectedAvatar = '🦸‍♂️'; // Default
+let selectedAvatar = '🦸‍♂️';
 
 function openAvatarPicker() {
     if (!currentUser) {
@@ -1804,10 +1735,10 @@ function selectAvatar(emoji) {
     });
 }
 
-
-    // ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 //  PROFILE SETTINGS
 // ═══════════════════════════════════════════════════
+
 async function saveAvatar() {
     if (!currentUser) return;
 
@@ -1874,6 +1805,7 @@ async function saveAvatar() {
         btn.textContent = 'Save Avatar';
     }
 }
+
 function openProfile() {
     if (!currentUser) {
         showToast('⚠️ Please login first!');
@@ -2039,7 +1971,8 @@ async function handleDeleteAccount() {
         console.error('Delete account error:', err);
     }
 }
-    // ═══════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════
 //  BLUR-UP IMAGE LAZY LOADER
 // ═══════════════════════════════════════════════════
 
@@ -2051,7 +1984,6 @@ const imageObserver = new IntersectionObserver((entries) => {
         const realSrc = img.dataset.src;
         if (!realSrc) return;
 
-        // Swap in the real image
         const tempImg = new Image();
         tempImg.onload = () => {
             img.src = realSrc;
@@ -2062,7 +1994,7 @@ const imageObserver = new IntersectionObserver((entries) => {
         imageObserver.unobserve(img);
     });
 }, {
-    rootMargin: '200px 0px' // Load images 200px before they enter view
+    rootMargin: '200px 0px'
 });
 
 function observeImages() {
@@ -2070,11 +2002,12 @@ function observeImages() {
         imageObserver.observe(img);
     });
 }
-    // ═══════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════
 //  LIKE/DISLIKE SYSTEM
 // ═══════════════════════════════════════════════════
 
-let currentUserReaction = null; // 'like', 'dislike', or null
+let currentUserReaction = null;
 let likesCount = 0;
 let dislikesCount = 0;
 
@@ -2082,7 +2015,6 @@ async function loadReactions(imdb) {
     if (!imdb) return;
 
     try {
-        // Get total counts
         const { data: reactions, error } = await sb
             .from('movie_reactions')
             .select('reaction')
@@ -2093,7 +2025,6 @@ async function loadReactions(imdb) {
         likesCount = reactions.filter(r => r.reaction === 'like').length;
         dislikesCount = reactions.filter(r => r.reaction === 'dislike').length;
 
-        // Get current user's reaction
         if (currentUser) {
             const { data: userReaction } = await sb
                 .from('movie_reactions')
@@ -2126,11 +2057,9 @@ function updateReactionUI() {
 
     if (!likeBtn || !dislikeBtn) return;
 
-    // Update counts
     likeCountEl.textContent = likesCount;
     dislikeCountEl.textContent = dislikesCount;
 
-    // Update active states
     likeBtn.classList.toggle('liked', currentUserReaction === 'like');
     dislikeBtn.classList.toggle('disliked', currentUserReaction === 'dislike');
 }
@@ -2149,7 +2078,6 @@ async function toggleLike() {
 
     try {
         if (currentUserReaction === 'like') {
-            // Remove like
             await sb
                 .from('movie_reactions')
                 .delete()
@@ -2161,7 +2089,6 @@ async function toggleLike() {
             showToast('👍 Like removed');
 
         } else {
-            // Add or update to like
             const { error } = await sb
                 .from('movie_reactions')
                 .upsert({
@@ -2207,7 +2134,6 @@ async function toggleDislike() {
 
     try {
         if (currentUserReaction === 'dislike') {
-            // Remove dislike
             await sb
                 .from('movie_reactions')
                 .delete()
@@ -2219,7 +2145,6 @@ async function toggleDislike() {
             showToast('👎 Dislike removed');
 
         } else {
-            // Add or update to dislike
             const { error } = await sb
                 .from('movie_reactions')
                 .upsert({
@@ -2251,13 +2176,12 @@ async function toggleDislike() {
     }
 }
 
-// Update createCommentCard to show user's avatar
 function createCommentCard(comment) {
     const card = document.createElement('div');
     card.className = 'comment-card';
     card.id = 'comment-' + comment.id;
 
-    const avatar = comment.user_avatar || '🦸‍♂️'; // Use stored avatar or default
+    const avatar = comment.user_avatar || '🦸‍♂️';
     const timeAgo = formatTimeAgo(comment.created_at);
     const isOwner = currentUser && currentUser.id === comment.user_id;
 
@@ -2283,7 +2207,6 @@ function createCommentCard(comment) {
     return card;
 }
 
-// Update submitComment to save avatar with comment
 async function submitComment() {
     if (!currentUser) { openAuth(); return; }
     if (!currentMovie) return;
@@ -2307,7 +2230,7 @@ async function submitComment() {
             .insert({
                 user_id: currentUser.id,
                 username: username,
-                user_avatar: avatar, // ✅ Save avatar with comment
+                user_avatar: avatar,
                 movie_imdb: currentMovie.imdb,
                 content: content
             })
@@ -2341,8 +2264,6 @@ async function submitComment() {
     }
 }
 
-
-
 // ═══════════════════════════════════════════════════
 //  USER DATA
 // ═══════════════════════════════════════════════════
@@ -2355,8 +2276,9 @@ async function loadUserData() {
     userWatchlist = saved.watchlist || [];
     userWatching  = saved.watching  || [];
     renderContinueWatching();
-    renderFavorites(); // ✅ ADD THIS LINE
+    renderFavorites();
 }
+
 function saveUserData() {
     if (!currentUser) return;
     const key = 'marvel_' + currentUser.id;
@@ -2407,6 +2329,7 @@ function toggleFavorite() {
     updateModalButtons();
     renderFavorites();
 }
+
 // ═══════════════════════════════════════════════════
 //  PROGRESS
 // ═══════════════════════════════════════════════════
@@ -2429,10 +2352,8 @@ function tickProgress() {
     if (newPercent > currentProgress) {
         currentProgress   = newPercent;
         lastSavedProgress = newPercent;
-     
     }
 
-    // Auto-save every 5% milestone
     if (newPercent % 5 === 0 && newPercent > 0 && currentUser) {
         _persistProgress(newPercent);
     }
@@ -2533,7 +2454,8 @@ function clearAllWatching(e) {
     hideContinueWatching();
     showToast('Continue watching cleared!');
 }
-    // ═══════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════
 //  FAVORITES DISPLAY
 // ═══════════════════════════════════════════════════
 
@@ -2549,7 +2471,6 @@ function renderFavorites() {
     section.classList.add('visible');
     grid.innerHTML = '';
 
-    // Show up to 6 favorites
     userFavorites.slice(0, 6).forEach(imdb => {
         const movie = movies.find(m => m.imdb === imdb);
         if (!movie) return;
@@ -2592,7 +2513,6 @@ function removeFromFavorites(imdb, e) {
     saveUserData();
     renderFavorites();
     
-    // Update button if movie modal is open
     if (currentMovie && currentMovie.imdb === imdb) {
         updateModalButtons();
     }
@@ -2611,7 +2531,6 @@ function clearAllFavorites(e) {
     saveUserData();
     hideFavorites();
     
-    // Update button if movie modal is open
     if (currentMovie) {
         updateModalButtons();
     }
@@ -2650,7 +2569,6 @@ async function loadComments(imdb, append = false) {
 
         if (!append) list.innerHTML = '';
 
-        // Remove old load more button
         const oldBtn = list.querySelector('.load-more-btn');
         if (oldBtn) oldBtn.remove();
 
@@ -2660,7 +2578,6 @@ async function loadComments(imdb, append = false) {
             return;
         }
 
-        // Animate each comment in
         data.forEach((comment, i) => {
             const card = createCommentCard(comment);
             card.style.animationDelay = `${i * 0.05}s`;
@@ -2700,11 +2617,9 @@ async function loadMoreComments() {
     await loadComments(currentMovieImdb, true);
 }
 
-
 async function deleteComment(commentId) {
     if (!currentUser) return;
 
-    // Confirm before deleting
     if (!confirm('Delete this comment?')) return;
 
     try {
@@ -2724,7 +2639,6 @@ async function deleteComment(commentId) {
             setTimeout(() => card.remove(), 300);
         }
 
-        // Update offset
         currentCommentOffset = Math.max(0, currentCommentOffset - 1);
 
         const list = document.getElementById('commentsList');
@@ -2773,7 +2687,6 @@ function escapeHtml(text) {
 // ═══════════════════════════════════════════════════
 //  NAV UI
 // ═══════════════════════════════════════════════════
-
 
 function updateNavForUser(user) {
     const avatar = user.avatar || currentUser?.user_metadata?.avatar || '🦸‍♂️';
@@ -2837,6 +2750,7 @@ function updateModalButtons() {
         fBtn.classList.toggle('saved', inFav);
     }
 }
+
 // ═══════════════════════════════════════════════════
 //  AUTH UI
 // ═══════════════════════════════════════════════════
@@ -2962,10 +2876,9 @@ function renderMovies(list) {
             </div>`;
         card.addEventListener('click', () => openMovie(movie));
         grid.appendChild(card);
-        
     });
     observeCards();
-     observeImages();
+    observeImages();
 }
 
 // ═══════════════════════════════════════════════════
@@ -3007,18 +2920,17 @@ function applyFilters() {
 // ═══════════════════════════════════════════════════
 
 function openMovie(movie) {
-    // Stop any existing progress timer
+    console.log('Opening movie:', movie.title);
+    
     clearInterval(progressUpdateInterval);
     currentMovie = movie;
 
-    // ── Header ──
-    document.getElementById('modalPhase').textContent    = 'Phase ' + movie.phase;
-    document.getElementById('modalTitle').textContent    = movie.title;
+    document.getElementById('modalPhase').textContent = 'Phase ' + movie.phase;
+    document.getElementById('modalTitle').textContent = movie.title;
 
-    // ── Sidebar ──
-    document.getElementById('sidebarPoster').src         = movie.poster;
+    document.getElementById('sidebarPoster').src = movie.poster;
     document.getElementById('sidebarRating').textContent = movie.rating + ' / 10';
-    document.getElementById('sidebarDesc').textContent   = movie.desc;
+    document.getElementById('sidebarDesc').textContent = movie.desc;
 
     const fullStars = Math.round(parseFloat(movie.rating) / 2);
     document.querySelector('.stars').textContent =
@@ -3029,33 +2941,29 @@ function openMovie(movie) {
         <span class="meta-tag">${movie.duration}</span>
         ${movie.genre.split(', ').map(g => `<span class="meta-tag">${g}</span>`).join('')}`;
 
-    // ── Progress ──
-   const savedItem     = userWatching.find(w => w.imdb === movie.imdb);
-const savedProgress = savedItem ? savedItem.progress : 0;
-currentProgress     = savedProgress;
-lastSavedProgress   = savedProgress;
+    const savedItem = userWatching.find(w => w.imdb === movie.imdb);
+    const savedProgress = savedItem ? savedItem.progress : 0;
+    currentProgress = savedProgress;
+    lastSavedProgress = savedProgress;
 
-const progressSlider = document.getElementById('progressSlider');
-const progressPercent = document.getElementById('progressPercent');
+    const progressSlider = document.getElementById('progressSlider');
+    const progressPercent = document.getElementById('progressPercent');
 
-if (progressSlider) progressSlider.value = savedProgress;
-if (progressPercent) progressPercent.textContent = savedProgress + '%';
+    if (progressSlider) progressSlider.value = savedProgress;
+    if (progressPercent) progressPercent.textContent = savedProgress + '%';
 
     const totalMinutes = parseDurationToMinutes(movie.duration);
     watchStartTime = Date.now() - (savedProgress / 100) * totalMinutes * 60000;
     progressUpdateInterval = setInterval(tickProgress, 1000);
 
-    // ── iframe ──
-// Reset to default source and load
-currentSource = 'vidsrc2';
-document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('active'));
-document.getElementById('src-vidsrc2').classList.add('active');
-loadSource(movie.imdb, currentSource);
+    // ✅ SIMPLE IFRAME LOAD
+    const frame = document.getElementById('movieFrame');
+    if (frame) {
+        frame.src = `https://vidsrc.cc/v2/embed/movie/${movie.imdb}`;
+    }
 
-    // ── Buttons ──
     updateModalButtons();
 
-    // ── Recommended strip ──
     const strip = document.getElementById('featuredStrip');
     strip.innerHTML = '';
     movies
@@ -3070,17 +2978,13 @@ loadSource(movie.imdb, currentSource);
             strip.appendChild(card);
         });
 
-    // ── Show modal ──
     document.getElementById('modal').classList.add('active');
     document.body.style.overflow = 'hidden';
 
-    // ── Comments ──
     updateCommentUI();
     loadComments(movie.imdb);
-// reactions 
-      loadReactions(movie.imdb);
+    loadReactions(movie.imdb);
     
-    // Character counter
     const commentInput = document.getElementById('commentInput');
     if (commentInput) {
         commentInput.oninput = () => {
@@ -3099,7 +3003,6 @@ loadSource(movie.imdb, currentSource);
 function closeModal() {
     clearInterval(progressUpdateInterval);
 
-    // Auto-save progress on close
     if (currentMovie && currentUser && lastSavedProgress > 0) {
         _persistProgress(lastSavedProgress);
         renderContinueWatching();
@@ -3160,6 +3063,7 @@ document.addEventListener('keydown', e => {
         closeProfile();
     }
 });
+
 document.addEventListener('DOMContentLoaded', () => {
     const p = document.getElementById('signupPassword');
     if (p) p.addEventListener('input', checkStrength);
@@ -3175,135 +3079,8 @@ window.addEventListener('load', () => {
     checkAuthState();
     setTimeout(() => document.getElementById('loader').classList.add('hidden'), 1600);
 });
-    // ═══════════════════════════════════════════════════
-//  MULTI-SOURCE PLAYER SYSTEM
+
 // ═══════════════════════════════════════════════════
-
-let currentSource = 'vidsrc2';
-
-/**
- * Maps a source key + imdb ID to an embed URL.
- * All sources accept IMDb IDs (tt-prefixed).
- * vidsrc.cc fires postMessage events for real progress tracking.
- */
-function getSourceUrl(imdb, source) {
-    const encodedImdb = encodeURIComponent(imdb);
-    const sources = {
-        // VidSrc v2 — clean player, IMDb support
-        'vidsrc2':   `https://vidsrc.cc/v2/embed/movie/${imdb}`,
-
-        // VidSrc v3 — alternate server, sometimes has sources v2 lacks
-        'vidsrc3':   `https://vidsrc.cc/v3/embed/movie/${imdb}`,
-
-        // VidSrc SBS — supports start timestamp & subtitle params
-        'vidsrcsbs': `https://vidsrc.sbs/embed/movie?id=${imdb}&autoplay=1`,
-
-        // VidLink Pro — clean no-ad-redirect UI
-        'vidlink':   `https://vidlink.pro/movie/${imdb}?autoplay=true&title=true`,
-
-        // AutoEmbed — multi-server, IMDb support
-        'autoembed': `https://autoembed.cc/movie/imdb/${imdb}`,
-
-        // Embed.su — clean player
-        'embedsu':   `https://embed.su/embed/movie/${imdb}`,
-
-        // 2Embed — your original fallback
-        '2embed':    `https://www.2embed.online/embed/movie/${imdb}`,
-    };
-    return sources[source] || sources['vidsrc2'];
-}
-
-function switchSource(sourceKey, btnEl) {
-    if (!currentMovie) return;
-    currentSource = sourceKey;
-
-    // Update button states
-    document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('active'));
-    btnEl.classList.add('active');
-
-    // Show loading state
-    const dot        = document.getElementById('sourceDot');
-    const statusText = document.getElementById('sourceStatusText');
-    dot.classList.add('loading');
-    statusText.textContent = 'Loading...';
-
-    // Small delay so the UI updates before the iframe reloads
-    const frame = document.getElementById('movieFrame');
-    frame.src   = '';
-
-    setTimeout(() => {
-        loadSource(currentMovie.imdb, sourceKey);
-    }, 120);
-}
-
-function loadSource(imdb, sourceKey) {
-    const frame      = document.getElementById('movieFrame');
-    const dot        = document.getElementById('sourceDot');
-    const statusText = document.getElementById('sourceStatusText');
-
-    dot.classList.add('loading');
-    statusText.textContent = 'Loading...';
-
-    frame.src = getSourceUrl(imdb, sourceKey);
-
-    // Mark as live once iframe fires load
-    frame.onload = () => {
-        dot.classList.remove('loading');
-        statusText.textContent = 'Live';
-    };
-
-    // Fallback if onload never fires (some iframes block it)
-    setTimeout(() => {
-        dot.classList.remove('loading');
-        statusText.textContent = 'Live';
-    }, 4000);
-}
-
-// ── Listen to vidsrc.cc postMessage for REAL progress tracking ──
-// vidsrc.cc fires { type:"PLAYER_EVENT", data:{ event, currentTime, duration } }
-window.addEventListener('message', (e) => {
-    // Only trust messages from known player origins
-    const trustedOrigins = [
-        'https://vidsrc.cc',
-        'https://vidsrc.sbs',
-        'https://vidlink.pro',
-        'https://autoembed.cc',
-        'https://embed.su',
-    ];
-    if (!trustedOrigins.includes(e.origin)) return;
-    if (!e.data || e.data.type !== 'PLAYER_EVENT') return;
-
-    const { event: evtType, currentTime, duration } = e.data.data || {};
-    if (!duration || duration === 0) return;
-
-    if (evtType === 'time' || evtType === 'pause') {
-        const percent = Math.min(Math.round((currentTime / duration) * 100), 100);
-
-        // Only update if the real player is ahead of the manual slider
-        if (percent > currentProgress) {
-            currentProgress   = percent;
-            lastSavedProgress = percent;
-            const slider = document.getElementById('progressSlider');
-            const label  = document.getElementById('progressPercent');
-            if (slider) slider.value          = percent;
-            if (label)  label.textContent     = percent + '%';
-
-            // Sync watchStartTime so the timer doesn't overwrite real data
-            if (currentMovie) {
-                const totalMin = parseDurationToMinutes(currentMovie.duration);
-                watchStartTime = Date.now() - (percent / 100) * totalMin * 60000;
-            }
-        }
-    }
-
-    if (evtType === 'complete') {
-        clearInterval(progressUpdateInterval);
-        _persistProgress(100);
-        renderContinueWatching();
-        showToast('🎉 Movie complete! Great watch!');
-    }
-});
-    // ═══════════════════════════════════════════════════
 //  INTERSECTION OBSERVER — LAZY CARD FADE-IN
 // ═══════════════════════════════════════════════════
 
@@ -3311,21 +3088,20 @@ const cardObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             entry.target.classList.add('visible');
-            // Stop watching it once it's appeared
             cardObserver.unobserve(entry.target);
         }
     });
 }, {
-    threshold: 0.1,       // Trigger when 10% of card is visible
-    rootMargin: '0px 0px -50px 0px'  // Start slightly before it enters view
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
 });
 
-// Call this every time you render movies
 function observeCards() {
     document.querySelectorAll('.movie-card').forEach(card => {
         cardObserver.observe(card);
     });
 }
+
 </script>
 </body>
 </html>
