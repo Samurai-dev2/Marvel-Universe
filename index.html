@@ -1396,51 +1396,53 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
                 <span class="modal-phase" id="modalPhase">Phase 1</span>
                 <h2 class="modal-title" id="modalTitle">Movie Title</h2>
             </div>
-             <button class="btn-reaction" id="likeBtn" onclick="toggleLike()">
-            <span class="reaction-icon">👍</span>
-            <span class="reaction-count" id="likeCount">0</span>
-        </button>
-        <button class="btn-reaction" id="dislikeBtn" onclick="toggleDislike()">
-            <span class="reaction-icon">👎</span>
-            <span class="reaction-count" id="dislikeCount">0</span>
-        </button>
+            <button class="btn-reaction" id="likeBtn" onclick="toggleLike()">
+                <span class="reaction-icon">👍</span>
+                <span class="reaction-count" id="likeCount">0</span>
+            </button>
+            <button class="btn-reaction" id="dislikeBtn" onclick="toggleDislike()">
+                <span class="reaction-icon">👎</span>
+                <span class="reaction-count" id="dislikeCount">0</span>
+            </button>
             <div class="modal-actions">
                 <button class="btn-watchlist" id="watchlistBtn" onclick="toggleWatchlist()">❤️ Watchlist</button>
                 <button class="btn-favorite" id="favBtn" onclick="toggleFavorite()">♡ Favorite</button>
                 <button class="modal-close" onclick="closeModal()">✕</button>
             </div>
         </div>
-      <div class="modal-player">
 
-    <iframe>
-        
-        id="movieFrame"
-        src=""
-        frameborder="0"
-        referrerpolicy="no-referrer"
-        allowfullscreen
-        allow="autoplay; fullscreen; picture-in-picture">
-    </iframe>
-  <div class="progress-tracker">
-        <span class="progress-label">PROGRESS:</span>
-        <input 
-            type="range" 
-            id="progressSlider" 
-            class="progress-slider" 
-            min="0" 
-            max="100" 
-            value="0"
-            oninput="updateProgress(this.value)">
-        <span class="progress-percent" id="progressPercent">0%</span>
-        <button class="btn-watchlist" onclick="saveProgress()" style="margin-left: 10px; padding: 4px 12px; font-size: 10px;">
-            💾 Save
-        </button>
+        <!-- ✅ ADD THIS WRAPPER -->
+        <div class="modal-body">
+            
+            <div class="modal-player">
+                <!-- ✅ FIXED IFRAME TAG -->
+                <iframe
+                    id="movieFrame"
+                    src=""
+                    frameborder="0"
+                    referrerpolicy="no-referrer"
+                    allowfullscreen
+                    allow="autoplay; fullscreen; picture-in-picture">
+                </iframe>
+                
+                <div class="progress-tracker">
+                    <span class="progress-label">PROGRESS:</span>
+                    <input 
+                        type="range" 
+                        id="progressSlider" 
+                        class="progress-slider" 
+                        min="0" 
+                        max="100" 
+                        value="0"
+                        oninput="updateProgress(this.value)">
+                    <span class="progress-percent" id="progressPercent">0%</span>
+                    <button class="btn-watchlist" onclick="saveProgress()" style="margin-left: 10px; padding: 4px 12px; font-size: 10px;">
+                        💾 Save
+                    </button>
+                </div>
+            </div>
 
-    </div>
-</div>
-
-   
-                    <div class="modal-sidebar">
+            <div class="modal-sidebar">
                 <img id="sidebarPoster" src="" alt="" class="sidebar-poster">
                 <div class="sidebar-rating">
                     <span class="stars">★★★★★</span>
@@ -1449,15 +1451,12 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
                 <div class="sidebar-meta" id="sidebarMeta"></div>
                 <p class="sidebar-desc" id="sidebarDesc"></p>
                 
-                <!-- Recommended movies strip -->
                 <p class="sidebar-title">MORE FROM THIS PHASE</p>
                 <div class="featured-strip" id="featuredStrip"></div>
                 
-                <!-- ✅ Comments NOW INSIDE sidebar -->
                 <div class="comments-section">
                     <p class="sidebar-title">💬 COMMENTS</p>
 
-                    <!-- Write a comment -->
                     <div class="comment-form" id="commentForm">
                         <textarea 
                             id="commentInput" 
@@ -1472,21 +1471,19 @@ footer { padding: 60px; border-top: 1px solid rgba(255,255,255,0.06); margin-top
                         </div>
                     </div>
 
-                    <!-- Login prompt if not logged in -->
                     <div class="comment-login-prompt" id="commentLoginPrompt">
                         <p>👤 <span onclick="openAuth()" style="color:var(--marvel-red);cursor:pointer;font-weight:700;">Login</span> to leave a comment</p>
                     </div>
 
-                    <!-- Comments list -->
                     <div class="comments-list" id="commentsList">
                         <div class="comments-loading">Loading comments...</div>
                     </div>
                 </div>
                 
-            </div>  <!-- ✅ sidebar closes HERE -->
-        </div>  <!-- ✅ modal-body closes HERE -->
-    </div>  <!-- ✅ modal closes HERE -->
-</div>  <!-- ✅ modal-overlay closes HERE -->
+            </div> <!-- ✅ sidebar closes -->
+        </div> <!-- ✅ modal-body closes -->
+    </div> <!-- ✅ modal closes -->
+</div> <!-- ✅ modal-overlay closes -->
 <!-- FOOTER -->
 <footer>
     <div class="footer-top">
